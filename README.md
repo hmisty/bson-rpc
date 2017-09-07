@@ -16,11 +16,8 @@ test
 	python -m bson_rpc.example_server
 
 ```
-from socket import socket
-import bson
-bson.patch_socket()
-sock = socket()
-sock.connect(('127.0.0.1', 8181))
+from bson_rpc import connect
+sock = connect('127.0.0.1', 8181)
 sock.sendobj({'service':'add'})
 sock.recvobj()
 ```

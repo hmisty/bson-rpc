@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # MIT License
 #
 # Copyright (c) 2017 Evan Liu (hmisty)
@@ -23,42 +21,13 @@
 # SOFTWARE.
 #
 
-"""
-An exmaple server
+from __future__ import print_function
+from socket import socket
+import bson
 
-Run in shell
-
-    $ python -m bson_rpc.example_server
-
-Or in python interactive shell
-
-    >>> from bson_rpc import example_server
-    >>> example_server.main('127.0.0.1', 8181)
-
-Then test it
-
-    $ nc localhost 8181
-
-"""
-from bson_rpc import rpc_service, start_server
-
-@rpc_service
-def hi():
-    return 'hi'
-
-@rpc_service
-def echo(s):
-    return s
-
-@rpc_service
-def add(a, b):
-    return a + b
-
-def main(host, port):
-    start_server(host, port)
-
-if __name__ == '__main__':
-    host = '127.0.0.1'
-    port = 8181
-    main(host, port)
+def connect(host, port):
+    bson.patch_socket()
+    sock = socket()
+    sock.connect((host, port))
+    return sock
 

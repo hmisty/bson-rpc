@@ -58,7 +58,11 @@ def invoke_func(func, args):
     if not callable(f):
         return error.service_not_callable
 
-    result = f(*args)
+    if args == None:
+        result = f()
+    else:
+        result = f(*args)
+
     return result
 
 def rpc_router(socket, address):
@@ -70,7 +74,12 @@ def rpc_router(socket, address):
         if obj != None:
             if obj.has_key('service'):
                 func = obj['service']
-                args = obj['args']
+
+                if obj.has_key('args'):
+                    args = obj['args']
+                else:
+                    args = None
+
                 print("call %s" % func)
                 try:
                     result = invoke_func(func, args)
