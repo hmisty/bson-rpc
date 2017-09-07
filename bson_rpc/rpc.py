@@ -25,6 +25,8 @@ from __future__ import print_function
 from gevent.server import StreamServer
 import bson
 
+import status
+
 # the global function map that remotely callable
 services = dict()
 
@@ -46,6 +48,19 @@ def rpc_service(func, name=None):
     services[name or func.__name__] = func
     return func
 
+def invoke_func(func, args):
+    global services
+
+    if not services.has_key(func):
+        return error.service_not_found
+
+    f = services[func]
+    if not callable(f):
+        return error.service_not_callable
+
+    result = f(*args)
+    return result
+
 def rpc_router(socket, address):
     print('%s:%s connected' % address)
 
@@ -55,11 +70,19 @@ def rpc_router(socket, address):
         if obj != None:
             if obj.has_key('service'):
                 func = obj['service']
+                args = obj['args']
                 print("call %s" % func)
-                socket.sendobj({func: 'ok'})
-            else: # by default be an echo service
-                print("echo")
-                socket.sendobj(obj)
+                try:
+                    result = invoke_func(func, args)
+                    response = status.ok
+                    response['data'] = result
+                except Exception as error:
+                    response = status.invoke_error
+                    response['error_msg'] = str(error)
+                finally:
+                    socket.sendobj(response)
+            else:
+                socket.sendobj(status.service_not_found)
 
     socket.close()
 
