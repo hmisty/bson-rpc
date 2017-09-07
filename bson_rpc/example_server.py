@@ -23,7 +23,7 @@
 # SOFTWARE.
 #
 
-from bson-rpc import rpc, rpc_func
+from bson_rpc import rpc, rpc_func
 
 @rpc_func
 def echo(s):

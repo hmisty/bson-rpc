@@ -1,0 +1,5 @@
+bson==0.4.8
+gevent==1.2.2
+greenlet==0.4.12
+pytz==2017.2
+six==1.10.0

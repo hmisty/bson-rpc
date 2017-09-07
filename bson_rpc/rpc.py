@@ -26,27 +26,27 @@ from gevent.server import StreamServer
 import bson
 
 # the global function map that remotely callable
-functions = dict()
+services = dict()
 
-def rpc_func(f, name=None):
-    """ add a function to remote callable function list.
+def rpc_service(func, name=None):
+    """ add a function to remote callable service map.
 
     use as function
 
-    >>> rpc_func(lambda s: s, name="echo")
+    >>> rpc_service(lambda s: s, name="echo")
 
     or use as decorator
 
-    >>> @rpc_func
+    >>> @rpc_service
         def echo(s):
             return s
 
     """
-    global functions
-    functions[name or f.__name__] = f
-    return f
+    global services
+    services[name or func.__name__] = func
+    return func
 
-def router(socket, address):
+def rpc_router(socket, address):
     print('New connection from %s:%s' % address)
     socket.sendall(b'Welcome to the echo server! Type quit to exit.\r\n')
     # using a makefile because we want to use readline()
@@ -64,5 +64,5 @@ def router(socket, address):
     rfileobj.close()
 
 def start_server(host, port):
-    server = StreamServer((host, port), router)
+    server = StreamServer((host, port), rpc_router)
     server.serve_forever()
