@@ -23,18 +23,38 @@
 # SOFTWARE.
 #
 
-from bson_rpc import rpc, rpc_func
+"""
+An exmaple server
 
-@rpc_func
+Run in shell
+
+    $ python -m bson_rpc.example_server
+
+Or in python interactive shell
+
+    >>> from bson_rpc import example_server
+    >>> example_server.main('127.0.0.1', 8181)
+
+Then test it
+
+    $ nc localhost 8181
+
+"""
+from bson_rpc import rpc_service, start_server
+
+@rpc_service
 def echo(s):
     return s
 
-@rpc_func
+@rpc_service
 def add(a, b):
     return a + b
 
-host = '127.0.0.1'
-port = 8181
-server = rpc.server(host, port)
-server.start()
+def main(host, port):
+    start_server(host, port)
+
+if __name__ == '__main__':
+    host = '127.0.0.1'
+    port = 8181
+    main(host, port)
 
