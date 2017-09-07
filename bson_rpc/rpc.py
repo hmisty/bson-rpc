@@ -47,22 +47,31 @@ def rpc_service(func, name=None):
     return func
 
 def rpc_router(socket, address):
-    print('New connection from %s:%s' % address)
-    socket.sendall(b'Welcome to the echo server! Type quit to exit.\r\n')
-    # using a makefile because we want to use readline()
-    rfileobj = socket.makefile(mode='rb')
+    print('%s:%s connected' % address)
+
     while True:
-        line = rfileobj.readline()
-        if not line:
-            print("client disconnected")
-            break
-        if line.strip().lower() == b'quit':
-            print("client quit")
-            break
-        socket.sendall(line)
-        print("echoed %r" % line)
-    rfileobj.close()
+        obj = socket.recvobj()
+
+        if obj != None:
+            if obj.has_key('service'):
+                func = obj['service']
+                print("call %s" % func)
+                socket.sendobj({func: 'ok'})
+            else: # by default be an echo service
+                print("echo")
+                socket.sendobj(obj)
+
+    socket.close()
+
+def patch_socket():
+    from gevent.server import socket
+    from bson.network import recvbytes, recvobj, sendobj
+    socket.recvbytes = recvbytes
+    socket.recvobj = recvobj
+    socket.sendobj = sendobj
 
 def start_server(host, port):
+    patch_socket()
     server = StreamServer((host, port), rpc_router)
     server.serve_forever()
+

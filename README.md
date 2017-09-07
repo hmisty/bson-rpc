@@ -11,6 +11,20 @@ a lightweight, high performance, multilingual RPC library
 
 	pip install git+https://github.com/hmisty/bson-rpc.git
 
+test
+
+	python -m bson_rpc.example_server
+
+```
+from socket import socket
+import bson
+bson.patch_socket()
+sock = socket()
+sock.connect(('127.0.0.1', 8181))
+sock.sendobj({'service':'add'})
+sock.recvobj()
+```
+
 ## Other Languages
 
 nodejs: https://github.com/hmisty/bson-rpc-nodejs
