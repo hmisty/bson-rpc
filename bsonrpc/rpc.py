@@ -21,6 +21,11 @@
 # SOFTWARE.
 #
 
+from __future__ import print_function
+from gevent.server import StreamServer
+import bson
+
+# the global function map that remotely callable
 functions = dict()
 
 def rpc_func(f, name=None):
@@ -41,4 +46,23 @@ def rpc_func(f, name=None):
     functions[name or f.__name__] = f
     return f
 
+def router(socket, address):
+    print('New connection from %s:%s' % address)
+    socket.sendall(b'Welcome to the echo server! Type quit to exit.\r\n')
+    # using a makefile because we want to use readline()
+    rfileobj = socket.makefile(mode='rb')
+    while True:
+        line = rfileobj.readline()
+        if not line:
+            print("client disconnected")
+            break
+        if line.strip().lower() == b'quit':
+            print("client quit")
+            break
+        socket.sendall(line)
+        print("echoed %r" % line)
+    rfileobj.close()
 
+def start_server(host, port):
+    server = StreamServer((host, port), router)
+    server.serve_forever()
