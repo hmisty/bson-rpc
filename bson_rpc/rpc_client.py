@@ -25,9 +25,30 @@ from __future__ import print_function
 from socket import socket
 import bson
 
+class Proxy:
+    def __init__(self, host=None, port=None):
+        bson.patch_socket()
+        self.sock = socket()
+        if host != None and port != None:
+            self.connect(host, port)
+
+    def connect(self, host, port):
+        self.sock.connect((host, port))
+
+    def __getattr__(self, name):
+        return self.invoke_func(name)
+
+    def invoke_func(self, name):
+        def rpc_invoke_func(*args):
+            self.sock.sendobj({'service': name, 'args': list(args)})
+            return self.sock.recvobj()
+
+        return rpc_invoke_func
+
+    def close(self):
+        self.sock.close()
+
 def connect(host, port):
-    bson.patch_socket()
-    sock = socket()
-    sock.connect((host, port))
-    return sock
+    proxy = Proxy(host, port)
+    return proxy
 

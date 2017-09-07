@@ -16,10 +16,12 @@ test
 	python -m bson_rpc.example_server
 
 ```
-from bson_rpc import connect
-sock = connect('127.0.0.1', 8181)
-sock.sendobj({'service':'add'})
-sock.recvobj()
+from bson_rpc.rpc_client import connect
+server = connect('127.0.0.1', 8181)
+server.hi()
+server.echo('hello bson-rpc')
+server.add(1,2)
+server.close()
 ```
 
 ## Other Languages

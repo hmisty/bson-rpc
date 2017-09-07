@@ -52,11 +52,11 @@ def invoke_func(func, args):
     global services
 
     if not services.has_key(func):
-        return error.service_not_found
+        return status.service_not_found
 
     f = services[func]
     if not callable(f):
-        return error.service_not_callable
+        return status.service_not_callable
 
     if args == None:
         result = f()
