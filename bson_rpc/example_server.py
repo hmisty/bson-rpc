@@ -40,17 +40,17 @@ Then test it
     $ nc localhost 8181
 
 """
-from bson_rpc import rpc_service, start_server
+from bson_rpc import remote__, start_server
 
-@rpc_service
+@remote__
 def hi():
     return 'hi'
 
-@rpc_service
+@remote__
 def echo(s):
     return s
 
-@rpc_service
+@remote__
 def add(a, b):
     return a + b
 

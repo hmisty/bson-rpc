@@ -25,9 +25,9 @@ test
 ```
 from bson_rpc.client import connect
 server = connect('127.0.0.1', 8181)
-server.hi()
-server.echo('hello bson-rpc')
-server.add(1,2)
+server.remote__hi()
+server.remote__echo('hello bson-rpc')
+server.remote__add(1,2)
 server.close()
 ```
 
