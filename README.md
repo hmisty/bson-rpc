@@ -23,7 +23,7 @@ test
 	python -m bson_rpc.example_server
 
 ```
-from bson_rpc.rpc_client import connect
+from bson_rpc.client import connect
 server = connect('127.0.0.1', 8181)
 server.hi()
 server.echo('hello bson-rpc')
