@@ -26,7 +26,7 @@ from socket import socket
 import bson
 
 class Proxy:
-    remote_functions = []
+    remote_functions = set()
 
     def __init__(self, host=None, port=None):
         bson.patch_socket()
@@ -40,9 +40,10 @@ class Proxy:
     def __getattr__(self, name): # comes here only if attr not in Proxy
         if name[:8] == 'remote__':
             fn = name[8:]
-            self.remote_functions.append(fn)
-
-        return getattr(self.remote_functions, name)
+            self.remote_functions.add(fn)
+            return self.invoke_func(fn)
+        else:
+            return getattr(self.remote_functions, name)
 
     def invoke_func(self, name):
         def invoke_remote_func(*args):

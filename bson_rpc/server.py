@@ -80,7 +80,7 @@ def rpc_router(socket, address):
                 else:
                     args = None
 
-                print("call %s" % func)
+                print("call %s" % fn)
                 try:
                     result = invoke_func(fn, args)
                     response = status.ok
