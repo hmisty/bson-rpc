@@ -21,8 +21,41 @@
 # SOFTWARE.
 #
 
-ok = {'error_code': 0}
-invoke_error = {'error_code': -1}
-service_not_found = {'error_code': -2, 'error_msg': 'service not found'}
-service_not_callable = {'error_code': -3, 'error_msg': 'service not callable'}
+from __future__ import print_function
+from socket import socket
+import bson
+
+class Proxy:
+    remote_functions = []
+
+    def __init__(self, host=None, port=None):
+        bson.patch_socket()
+        if host != None and port != None:
+            self.connect(host, port)
+
+    def connect(self, host, port):
+        self.sock = socket()
+        self.sock.connect((host, port))
+
+    def __getattr__(self, name): # comes here only if attr not in Proxy
+        if name[:8] == 'remote__':
+            fn = name[8:]
+            self.remote_functions.append(fn)
+
+        return getattr(self.remote_functions, name)
+
+    def invoke_func(self, name):
+        def invoke_remote_func(*args):
+            self.sock.sendobj({'fn': name, 'args': list(args)})
+            return self.sock.recvobj()
+
+        return invoke_remote_func
+
+    def close(self):
+        self.sock.close()
+        self.sock = None
+
+def connect(host, port):
+    proxy = Proxy(host, port)
+    return proxy
 

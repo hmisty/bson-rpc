@@ -25,38 +25,38 @@ from __future__ import print_function
 from gevent.server import StreamServer
 import bson
 
-import status
+from . import status
 
 # the global function map that remotely callable
-services = dict()
+remote_functions = dict()
 
-def rpc_service(func, name=None):
-    """ add a function to remote callable service map.
+def remote__(func, name=None):
+    """ add a function to remote callable function map.
 
     use as function
 
-    >>> rpc_service(lambda s: s, name="echo")
+    >>> remote__(lambda s: s, name="echo")
 
     or use as decorator
 
-    >>> @rpc_service
+    >>> @remote__
         def echo(s):
             return s
 
     """
-    global services
-    services[name or func.__name__] = func
+    global remote_functions
+    remote_functions[name or func.__name__] = func
     return func
 
-def invoke_func(func, args):
-    global services
+def invoke_func(fn, args):
+    global remote_functions
 
-    if not services.has_key(func):
-        return status.service_not_found
+    if not remote_functions.has_key(fn):
+        return status.function_not_found
 
-    f = services[func]
+    f = remote_functions[fn]
     if not callable(f):
-        return status.service_not_callable
+        return status.function_not_callable
 
     if args == None:
         result = f()
@@ -72,8 +72,8 @@ def rpc_router(socket, address):
         obj = socket.recvobj()
 
         if obj != None:
-            if obj.has_key('service'):
-                func = obj['service']
+            if obj.has_key('fn'):
+                fn = obj['fn']
 
                 if obj.has_key('args'):
                     args = obj['args']
@@ -82,7 +82,7 @@ def rpc_router(socket, address):
 
                 print("call %s" % func)
                 try:
-                    result = invoke_func(func, args)
+                    result = invoke_func(fn, args)
                     response = status.ok
                     response['data'] = result
                 except Exception as error:
@@ -91,7 +91,7 @@ def rpc_router(socket, address):
                 finally:
                     socket.sendobj(response)
             else:
-                socket.sendobj(status.service_not_found)
+                socket.sendobj(status.function_not_found)
 
     socket.close()
 

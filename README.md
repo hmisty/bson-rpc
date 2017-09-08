@@ -7,6 +7,13 @@ a lightweight, high performance, multilingual RPC library
 2. optimized for max qps (query per second) instead of concurrent connections.
 3. aim to support multiple languages, in separate git repositories.
 
+# Variable Naming Philosophy
+
+* fn, f, func, function, service, args
+
+* remote\_\_, rpc\_
+
+
 ## Install
 
 	pip install git+https://github.com/hmisty/bson-rpc.git
