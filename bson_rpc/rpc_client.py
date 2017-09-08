@@ -26,17 +26,22 @@ from socket import socket
 import bson
 
 class Proxy:
-    def __init__(self, host=None, port=None):
+    def __init__(self, service_names, host=None, port=None):
+        self.rpc_functions = service_names
         bson.patch_socket()
-        self.sock = socket()
         if host != None and port != None:
             self.connect(host, port)
 
     def connect(self, host, port):
+        self.sock = socket()
         self.sock.connect((host, port))
 
-    def __getattr__(self, name):
-        return self.invoke_func(name)
+    def __getattr__(self, name): # comes here only if attr not found
+        #if name[:1] == '_' and name[-1:] == '_':
+        return getattr(self.rpc_functions, name)
+        #else:
+        #    print('proxy for ' + name)
+        #    return self.invoke_func(name)
 
     def invoke_func(self, name):
         def rpc_invoke_func(*args):
@@ -47,8 +52,9 @@ class Proxy:
 
     def close(self):
         self.sock.close()
+        self.sock = None
 
 def connect(host, port):
-    proxy = Proxy(host, port)
+    proxy = Proxy(['hi', 'echo', 'add'], host, port)
     return proxy
 
