@@ -22,7 +22,9 @@
 #
 
 from __future__ import print_function
-from gevent.server import StreamServer
+import socket
+import select
+import Queue
 import bson
 
 from . import status
@@ -65,45 +67,94 @@ def invoke_func(fn, args):
 
     return result
 
-def rpc_router(socket, address):
-    print('%s:%s connected' % address)
+def route(obj):
+    response = None
+    # obj is a bson obj received from a socket
+    if obj != None:
+        if obj.has_key('fn'):
+            fn = obj['fn']
 
-    while True:
-        obj = socket.recvobj()
-
-        if obj != None:
-            if obj.has_key('fn'):
-                fn = obj['fn']
-
-                if obj.has_key('args'):
-                    args = obj['args']
-                else:
-                    args = None
-
-                print("call %s" % fn)
-                try:
-                    result = invoke_func(fn, args)
-                    response = status.ok
-                    response['data'] = result
-                except Exception as error:
-                    response = status.invoke_error
-                    response['error_msg'] = str(error)
-                finally:
-                    socket.sendobj(response)
+            if obj.has_key('args'):
+                args = obj['args']
             else:
-                socket.sendobj(status.function_not_found)
+                args = None
 
-    socket.close()
+            print("call %s" % fn)
+            try:
+                result = invoke_func(fn, args)
+                response = status.ok
+                response['data'] = result
+            except Exception as error:
+                response = status.invoke_error
+                response['error_msg'] = str(error)
+        else:
+            response = status.function_not_found
 
-def patch_socket():
-    from gevent.server import socket
-    from bson.network import recvbytes, recvobj, sendobj
-    socket.recvbytes = recvbytes
-    socket.recvobj = recvobj
-    socket.sendobj = sendobj
+    return response
+
+def select_on(server):
+    inputs = [server] # sockets to read
+    outputs = [] # sockets to write
+    message_queues = {} # socket message queue
+    timeout = 20
+
+    while inputs:
+        readable , writable , exceptional = select.select(inputs, outputs, inputs, timeout)
+
+        if not (readable or writable or exceptional): # timeout will generate three empty lists 
+            print("Time out ! ")
+            break;
+
+        for sock in readable:
+            if sock is server:
+                conn, addr = sock.accept()
+                print('%s:%s connected' % addr)
+                conn.setblocking(False)
+                inputs.append(conn)
+                message_queues[conn] = Queue.Queue()
+            else: # sock is a conn
+                obj = sock.recvobj()
+                if not obj:
+                    # treat empty message as closed connection
+                    print('%s:%s disconnected' % addr)
+                    if sock in outputs:
+                        outputs.remove(sock)
+
+                    inputs.remove(sock)
+                    sock.close()
+                    del message_queues[sock]
+                else:
+                    response = route(obj)
+                    if response:
+                        message_queues[sock].put(response)
+
+                    if sock not in outputs:
+                        outputs.append(sock)
+
+        for sock in writable:
+            try:
+                obj = message_queues[sock].get_nowait()
+            except Queue.Empty:
+                print('%s:%s queue empty' % sock.getpeername())
+                outputs.remove(sock)
+            else:
+                sock.sendobj(obj)
+
+        for sock in exceptional:
+            print('%s:%s exception' % sock.getpeername())
+            if sock in outputs:
+                outputs.remove(sock)
+
+            inputs.remove(sock)
+            sock.close()
+            del message_queues[sock]
 
 def start_server(host, port):
-    patch_socket()
-    server = StreamServer((host, port), rpc_router)
-    server.serve_forever()
+    bson.patch_socket()
 
+    server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    server.setblocking(False)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR  , 1)
+    server.bind((host, port))
+    server.listen(10) # max 10 clients
+    select_on(server)
