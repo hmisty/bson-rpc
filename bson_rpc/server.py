@@ -156,5 +156,5 @@ def start_server(host, port):
     server.setblocking(False)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR  , 1)
     server.bind((host, port))
-    server.listen(10) # max 10 clients
+    server.listen(0)
     select_on(server)

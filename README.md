@@ -35,6 +35,8 @@ s2.remote__echo('i am still alive')
 s2.close()
 ```
 
+	python -m bson_rpc.example_client
+
 ## Other Languages
 
 nodejs: https://github.com/hmisty/bson-rpc-nodejs

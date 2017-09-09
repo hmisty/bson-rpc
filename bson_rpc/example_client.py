@@ -1,3 +1,4 @@
+#encoding:utf-8
 #!/usr/bin/env python
 
 # MIT License
@@ -24,37 +25,37 @@
 #
 
 """
-An exmaple server
+An exmaple client
 
 Run in shell
 
-    $ python -m bson_rpc.example_server
+    $ python -m bson_rpc.example_client
 
 Or in python interactive shell
 
-    >>> from bson_rpc import example_server
-    >>> example_server.main('127.0.0.1', 8181)
+    >>> from bson_rpc import example_client
+    >>> example_client.main('127.0.0.1', 8181)
 
 """
-from bson_rpc import remote__, start_server
-
-@remote__
-def hi():
-    return 'hi'
-
-@remote__
-def echo(s):
-    return s
-
-@remote__
-def add(a, b):
-    return a + b
-
-def main(host, port):
-    start_server(host, port)
+import time
+from bson_rpc.client import connect
 
 if __name__ == '__main__':
     host = '127.0.0.1'
     port = 8181
-    main(host, port)
+
+    connections = []
+
+    for i in range(10):
+        connections.append(connect(host, port))
+        print('connected to server %d' % i)
+
+    for i, conn in enumerate(connections):
+        print('call server %d' % i)
+        response = conn.remote__hi()
+        print('response from server %d: %s' % (i, str(response)))
+        response = conn.remote__echo('你好')
+        print('response from server %d: %s' % (i, str(response)))
+        response = conn.remote__add(1,2)
+        print('response from server %d: %s' % (i, str(response)))
 
