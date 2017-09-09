@@ -24,11 +24,15 @@ test
 
 ```
 from bson_rpc.client import connect
-server = connect('127.0.0.1', 8181)
-server.remote__hi()
-server.remote__echo('hello bson-rpc')
-server.remote__add(1,2)
-server.close()
+s1 = connect('127.0.0.1', 8181)
+s2 = connect('127.0.0.1', 8181)
+s1.remote__hi()
+s1.remote__echo('hello bson-rpc')
+s1.remote__add(1,2)
+s2.remote__hi()
+s1.close()
+s2.remote__echo('i am still alive')
+s2.close()
 ```
 
 ## Other Languages
