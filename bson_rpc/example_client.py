@@ -52,10 +52,10 @@ if __name__ == '__main__':
 
     for i, conn in enumerate(connections):
         print('call server %d' % i)
-        response = conn.remote__hi()
+        response = conn.remote_call('hi')
         print('response from server %d: %s' % (i, str(response)))
-        response = conn.remote__echo('你好')
+        response = conn.remote_call('echo', '你好')
         print('response from server %d: %s' % (i, str(response)))
-        response = conn.remote__add(1,2)
+        response = conn.remote_call('add', 1,2)
         print('response from server %d: %s' % (i, str(response)))
 
