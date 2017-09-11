@@ -102,7 +102,7 @@ def select_on(server):
         readable , writable , exceptional = select.select(inputs, outputs, inputs, timeout)
 
         if not (readable or writable or exceptional): # timeout will generate three empty lists
-            print("Time out ! ")
+            print("time out! ")
             break;
 
         for sock in readable:
@@ -135,7 +135,7 @@ def select_on(server):
             try:
                 obj = message_queues[sock].get_nowait()
             except Queue.Empty:
-                print('%s:%s queue empty' % sock.getpeername())
+                #print('%s:%s queue empty' % sock.getpeername())
                 outputs.remove(sock)
             else:
                 sock.sendobj(obj)
@@ -157,4 +157,9 @@ def start(host, port):
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR  , 1)
     server.bind((host, port))
     server.listen(5) # allow max 5 in waiting list
-    select_on(server)
+
+    try:
+        while True: # loop forever
+            select_on(server)
+    except KeyboardInterrupt:
+        exit()
