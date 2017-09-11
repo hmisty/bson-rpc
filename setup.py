@@ -42,7 +42,7 @@ if __name__ == "__main__":
 			url=URLBASE,
 			download_url='/'.join([URLBASE, URLMAP.get(VERSION, URLMAP['daily'])]),
 			packages=[
-				'bson-rpc'
+				'bson_rpc'
 				],
 			scripts=[],
 			license= 'MIT',
