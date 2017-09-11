@@ -26,8 +26,6 @@ from socket import socket
 import bson
 
 class Proxy:
-    remote_functions = set()
-
     def __init__(self, host=None, port=None):
         bson.patch_socket()
         if host != None and port != None:
@@ -38,13 +36,9 @@ class Proxy:
         self.sock.connect((host, port))
 
     def use_service(self, namelist):
-        self.remote_functions = set(namelist);
-
-    def __getattr__(self, name):
-        if name in self.remote_functions:
-            return self.invoke_func(name);
-        else:
-            return getattr(self.remote_functions, name)
+        for name in namelist:
+            f = self.invoke_func(name);
+            setattr(self, name, f);
 
     def invoke_func(self, name):
         def invoke_remote_func(*args, **kwargs):

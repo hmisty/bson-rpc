@@ -156,5 +156,5 @@ def start(host, port):
     server.setblocking(False)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR  , 1)
     server.bind((host, port))
-    server.listen(0)
+    server.listen(5) # allow max 5 in waiting list
     select_on(server)
