@@ -6,9 +6,6 @@ How to run:
     $ cat examples/client.py | python
 """
 
-print __name__
-print __package__
-
 from bson_rpc.client import connect
 
 if __name__ == '__main__':
@@ -18,13 +15,7 @@ if __name__ == '__main__':
     conn = connect(host, port)
     print('connected to server %s' % host)
 
-    conn.use_service(['hi', 'echo', 'add']);
-
-    err, res = conn.hi()
-    print('result: %s' % str(res))
-
-    err, res = conn.echo('你好')
-    print('result: %s' % str(res))
+    conn.use_service(['add']);
 
     err, res = conn.add(1,2)
     print('result: %s' % str(res))

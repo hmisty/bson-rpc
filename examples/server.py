@@ -7,14 +7,6 @@ How to run:
 from bson_rpc import rpc, start_server
 
 @rpc
-def hi():
-    return 'hi'
-
-@rpc
-def echo(s):
-    return s
-
-@rpc
 def add(a, b):
     return a + b
 
