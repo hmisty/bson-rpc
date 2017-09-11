@@ -59,3 +59,7 @@ if __name__ == '__main__':
         response = conn.remote_call('add', 1,2)
         print('response from server %d: %s' % (i, str(response)))
 
+        conn.disconnect();
+        print('disconnected from server %d' % i)
+
+

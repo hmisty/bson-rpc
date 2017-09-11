@@ -39,7 +39,7 @@ class Proxy:
         self.sock.sendobj({'fn': name, 'args': list(args)})
         return self.sock.recvobj()
 
-    def close(self):
+    def disconnect(self):
         self.sock.close()
         self.sock = None
 
