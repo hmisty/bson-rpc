@@ -13,7 +13,7 @@ a lightweight, high performance, multilingual RPC library
 
 test
 
-	python -m bson_rpc.example_server
+	python examples/server2.py
 
 ```
 from bson_rpc.client import connect
@@ -30,7 +30,7 @@ s2.echo('i am still alive')
 s2.close()
 ```
 
-	python -m bson_rpc.example_client
+	python examples/client2.py
 
 ## Other Languages
 
