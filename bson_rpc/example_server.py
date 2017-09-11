@@ -36,17 +36,17 @@ Or in python interactive shell
     >>> example_server.main('127.0.0.1', 8181)
 
 """
-from bson_rpc import remote__, start_server
+from bson_rpc import rpc, start_server
 
-@remote__
+@rpc
 def hi():
     return 'hi'
 
-@remote__
+@rpc
 def echo(s):
     return s
 
-@remote__
+@rpc
 def add(a, b):
     return a + b
 

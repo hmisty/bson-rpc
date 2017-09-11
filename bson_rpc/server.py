@@ -32,16 +32,16 @@ from . import status
 # the global function map that remotely callable
 remote_functions = dict()
 
-def remote__(func, name=None):
+def rpc(func, name=None):
     """ add a function to remote callable function map.
 
     use as function
 
-    >>> remote__(lambda s: s, name="echo")
+    >>> rpc(lambda s: s, name="echo")
 
     or use as decorator
 
-    >>> @remote__
+    >>> @rpc
         def echo(s):
             return s
 
@@ -83,7 +83,7 @@ def route(obj):
             try:
                 result = invoke_func(fn, args)
                 response = status.ok
-                response['data'] = result
+                response['result'] = result
             except Exception as error:
                 response = status.invoke_error
                 response['error_msg'] = str(error)
@@ -101,7 +101,7 @@ def select_on(server):
     while inputs:
         readable , writable , exceptional = select.select(inputs, outputs, inputs, timeout)
 
-        if not (readable or writable or exceptional): # timeout will generate three empty lists 
+        if not (readable or writable or exceptional): # timeout will generate three empty lists
             print("Time out ! ")
             break;
 
@@ -149,7 +149,7 @@ def select_on(server):
             sock.close()
             del message_queues[sock]
 
-def start_server(host, port):
+def start(host, port):
     bson.patch_socket()
 
     server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)

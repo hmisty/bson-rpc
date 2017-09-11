@@ -37,7 +37,7 @@ Or in python interactive shell
     >>> example_client.main('127.0.0.1', 8181)
 
 """
-import time
+from time import time
 from bson_rpc.client import connect
 
 if __name__ == '__main__':
@@ -52,14 +52,33 @@ if __name__ == '__main__':
 
     for i, conn in enumerate(connections):
         print('call server %d' % i)
-        response = conn.remote_call('hi')
-        print('response from server %d: %s' % (i, str(response)))
-        response = conn.remote_call('echo', '你好')
-        print('response from server %d: %s' % (i, str(response)))
-        response = conn.remote_call('add', 1,2)
-        print('response from server %d: %s' % (i, str(response)))
+        conn.use_service(['hi', 'echo', 'add']);
+        err, res = conn.hi()
+        print('response from server %d: %s' % (i, str(res)))
+        err, res = conn.echo('你好')
+        print('response from server %d: %s' % (i, str(res)))
+        err, res = conn.add(1,2)
+        print('response from server %d: %s' % (i, str(res)))
 
         conn.disconnect();
         print('disconnected from server %d' % i)
 
+    conn = connect(host, port)
+    conn.use_service(['add'])
+    begin = time()
+    success = 0
+    failure = 0
+    while (time() - begin) < 5: # duration: 5 sec
+        err, result = conn.add(1,2)
+        if err == 0 and result == 3: #1+2=3
+            success += 1
+        else:
+            failure += 1
+
+    conn.disconnect()
+    end = time()
+    print('Time elapsed: %d ms' % int(end - begin))
+    print('Successful request: %d ' % success)
+    print('Failed request: %d ' % failure)
+    print('Request per second: %d ' % (success / (end - begin)))
 
