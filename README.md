@@ -11,26 +11,47 @@ a lightweight, high performance, multilingual RPC library
 
 	pip install git+https://github.com/hmisty/bson-rpc.git
 
-test
+## Examples
 
-	python examples/server2.py
+server.py
+
+```python
+from bson_rpc import rpc, start_server
+
+@rpc
+def add(a, b):
+    return a + b
+
+def main(host, port):
+    start_server(host, port)
+
+if __name__ == '__main__':
+    host = '127.0.0.1'
+    port = 8181
+    main(host, port)
 
 ```
+
+client.py
+
+```python
 from bson_rpc.client import connect
-s1 = connect('127.0.0.1', 8181)
-s2 = connect('127.0.0.1', 8181)
-s1.use_service(['hi', 'echo', 'add'])
-s2.use_service(['hi', 'echo'])
-s1.hi()
-s1.echo('hello bson-rpc')
-s1.add(1,2)
-s2.hi()
-s1.close()
-s2.echo('i am still alive')
-s2.close()
-```
 
-	python examples/client2.py
+if __name__ == '__main__':
+    host = '127.0.0.1'
+    port = 8181
+
+    conn = connect(host, port)
+    print('connected to server %s' % host)
+
+    conn.use_service(['add']);
+
+    err, res = conn.add(1,2)
+    print('result: %s' % str(res))
+
+    conn.disconnect();
+    print('disconnected from server %s' % host)
+```
 
 ## Other Languages
 
