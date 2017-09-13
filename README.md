@@ -9,6 +9,10 @@ a lightweight, high performance, multilingual RPC library
 
 ## Install
 
+	pip install bson-rpc
+
+or,
+
 	pip install git+https://github.com/hmisty/bson-rpc.git
 
 ## Examples
