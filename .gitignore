@@ -103,3 +103,5 @@ ENV/
 # vim history files
 .*~
 
+# sdist generated
+MANIFEST
