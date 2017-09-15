@@ -1,0 +1,7 @@
+- 0.6.0
+	2017.9.15
+	the new implementation on zeromq REQ/REP.
+
+- 0.5.3
+	2017.9.13
+	the first published version, implemented on raw tcp socket / select.

@@ -38,7 +38,7 @@ Or in python interactive shell
 
 """
 from time import time
-from bson_rpc.client import connect
+from bson_rpc import connect
 
 if __name__ == '__main__':
     host = '127.0.0.1'
@@ -64,6 +64,7 @@ if __name__ == '__main__':
         print('disconnected from server %d' % i)
 
     conn = connect(host, port)
+    #conn = connect('ipc:///tmp/bson_rpc')
     conn.use_service(['add'])
     begin = time()
     success = 0
@@ -77,7 +78,7 @@ if __name__ == '__main__':
 
     conn.disconnect()
     end = time()
-    print('Time elapsed: %d ms' % int(end - begin))
+    print('Time elapsed: %d s' % int(end - begin))
     print('Successful request: %d ' % success)
     print('Failed request: %d ' % failure)
     print('Request per second: %d ' % (success / (end - begin)))
