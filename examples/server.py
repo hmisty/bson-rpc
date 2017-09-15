@@ -11,8 +11,8 @@ def add(a, b):
     return a + b
 
 def main(host, port):
-    #start_server(host, port)
-    start_server('ipc:///tmp/bson_rpc')
+    start_server(host, port)
+    #start_server('ipc:///tmp/bson_rpc')
 
 if __name__ == '__main__':
     host = '127.0.0.1'
