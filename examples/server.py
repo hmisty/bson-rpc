@@ -9,8 +9,12 @@ from bson_rpc import rpc, start_server
 
 @rpc
 def add(a, b):
-    #time.sleep(5.0) # would block all
+    #time.sleep(1.0) # would block all
     return a + b
+
+@rpc
+def echo(s):
+    return s
 
 def main(host, port):
     start_server(host, port)

@@ -16,9 +16,12 @@ if __name__ == '__main__':
     #conn = connect('ipc:///tmp/bson_rpc')
     print('connected to server %s' % host)
 
-    conn.use_service(['add']);
+    conn.use_service(['add', 'echo']);
 
     err, res = conn.add(1,2)
+    print('result: %s' % str(res))
+
+    err, res = conn.echo('你好')
     print('result: %s' % str(res))
 
     conn.disconnect();

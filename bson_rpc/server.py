@@ -22,6 +22,7 @@
 #
 
 from __future__ import print_function
+import time
 import socket
 import select
 import Queue
@@ -50,47 +51,64 @@ def rpc(func, name=None):
     remote_functions[name or func.__name__] = func
     return func
 
-def invoke_func(fn, args):
+def invoke_func(fn, args=None):
     global remote_functions
 
+    if fn is None:
+        return status.function_not_found.copy()
+
     if not remote_functions.has_key(fn):
-        return status.function_not_found
+        return status.function_not_found.copy()
 
     f = remote_functions[fn]
     if not callable(f):
-        return status.function_not_callable
+        return status.function_not_callable.copy()
 
-    if args == None:
-        result = f()
-    else:
-        result = f(*args)
+    try:
+        begin = time.time()
 
-    return result
+        if args == None:
+            result = f()
+        else:
+            result = f(*args)
+
+        elapsed = time.time() - begin
+        elapsed = int(elapsed * 1000) # in milliseconds
+
+        response = status.ok.copy() # copy() before modify!
+        response['result'] = result
+        response['time'] = elapsed
+    except Exception as error:
+        response = status.invoke_error.copy()
+        response['error_msg'] = str(error)
+
+    return response
 
 def compute_on(obj):
     response = None
+
     # obj is a bson obj received from a socket
     if obj != None:
-        if obj.has_key('fn'):
-            fn = obj['fn']
+        _id = obj.get('_id') or 0
 
-            if obj.has_key('args'):
-                args = obj['args']
-            else:
-                args = None
+        fn = obj.get('fn')
+        args = obj.get('args')
+        response = invoke_func(fn, args)
 
-            print("call %s" % fn)
-            try:
-                result = invoke_func(fn, args)
-                response = status.ok
-                response['result'] = result
-            except Exception as error:
-                response = status.invoke_error
-                response['error_msg'] = str(error)
-        else:
-            response = status.function_not_found
+        response['_id'] = _id
 
     return response
+
+def log(sock, *args):
+    datetime = '%s %s' % (time.ctime(), time.tzname[0])
+
+    try:
+        conn_str = '%s:%s' % sock.getpeername()
+    except:
+        conn_str = 'broken client'
+
+    message = ' '.join(map(lambda x: str(x), args))
+    print(datetime, conn_str, message)
 
 class Server:
     def __init__(self, host, port):
@@ -101,7 +119,7 @@ class Server:
         self.host = host
         self.port = port
 
-    def start_forever(self, polling_interval=20):
+    def start_forever(self, polling_interval=0.5):
         bson.patch_socket()
 
         server = self.server
@@ -136,29 +154,37 @@ class Server:
         for sock in readable:
             if sock is server: # it is the server socket
                 conn, addr = sock.accept()
-                print('%s:%s connected' % addr)
+                log(conn, 'CONNECT')
                 conn.setblocking(False)
                 inputs.append(conn)
                 message_queues[conn] = Queue.Queue()
             else: # it is a connection socket
-                obj = sock.recvobj()
-                if not obj:
+                obj = None
+                try:
+                    obj = sock.recvobj()
+                except Exception as e:
+                    log(sock, e)
+
+                if obj:
+                    response = compute_on(obj) # caution: would block!
+                    log(sock, 'RPC', obj)
+                    print('in:', response)
+                    message_queues[sock].put(response)
+
+                    if sock not in outputs:
+                        outputs.append(sock)
+                    else:
+                        pass
+
+                else:
                     # treat empty message as closed connection
-                    print('%s:%s disconnected' % sock.getpeername())
+                    log(sock, 'DISCONNECT')
                     if sock in outputs:
                         outputs.remove(sock)
 
                     inputs.remove(sock)
                     sock.close()
                     del message_queues[sock]
-                else:
-                    response = compute_on(obj) # caution: would block!
-                    if response:
-                        message_queues[sock].put(response)
-
-                    if sock not in outputs:
-                        outputs.append(sock)
-
 
     def write_each(self, writable):
         outputs = self.outputs
@@ -166,12 +192,12 @@ class Server:
 
         for sock in writable:
             try:
-                obj = message_queues[sock].get_nowait()
+                if (sock in message_queues):
+                    obj = message_queues[sock].get_nowait()
+                    log(sock, 'REPLY', obj)
+                    sock.sendobj(obj)
             except Queue.Empty:
-                #print('%s:%s queue empty' % sock.getpeername())
                 outputs.remove(sock)
-            else:
-                sock.sendobj(obj)
 
     def catch_each(self, exceptional):
         inputs = self.inputs
@@ -179,7 +205,7 @@ class Server:
         message_queues = self.message_queues
 
         for sock in exceptional:
-            print('%s:%s exception' % sock.getpeername())
+            log(sock, 'EXCEPTION')
             if sock in outputs:
                 outputs.remove(sock)
 

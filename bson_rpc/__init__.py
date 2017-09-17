@@ -12,9 +12,9 @@ start_server = server.start
 import client as client
 connect = client.connect
 
-#import sys
-#defaultencoding = 'utf-8'
-#if sys.getdefaultencoding() != defaultencoding:
-#    reload(sys)
-#    sys.setdefaultencoding(defaultencoding)
-#
+import sys
+defaultencoding = 'utf-8'
+if sys.getdefaultencoding() != defaultencoding:
+    reload(sys)
+    sys.setdefaultencoding(defaultencoding)
+
