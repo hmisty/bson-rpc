@@ -67,7 +67,7 @@ def invoke_func(fn, args):
 
     return result
 
-def route(obj):
+def compute_on(obj):
     response = None
     # obj is a bson obj received from a socket
     if obj != None:
@@ -92,31 +92,59 @@ def route(obj):
 
     return response
 
-def select_on(server):
-    inputs = [server] # sockets to read
-    outputs = [] # sockets to write
-    message_queues = {} # socket message queue
-    timeout = 20
+class Server:
+    def __init__(self, host, port):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.inputs = [self.server] # sockets to read
+        self.outputs = [] # sockets to write
+        self.message_queues = {} # socket message queue
+        self.host = host
+        self.port = port
 
-    while inputs:
-        readable , writable , exceptional = select.select(inputs, outputs, inputs, timeout)
+    def start_forever(self, polling_interval=20):
+        bson.patch_socket()
 
-        if not (readable or writable or exceptional): # timeout will generate three empty lists
-            print("time out! ")
-            break;
+        server = self.server
+        inputs = self.inputs
+        outputs = self.outputs
+        message_queues = self.message_queues
+
+        server.setblocking(False)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((self.host, self.port))
+        server.listen(5) # allow max 5 in waiting list
+
+        inputs = self.inputs
+        while inputs:
+            readable, writable, exceptional = \
+                    select.select(inputs, outputs, inputs, polling_interval)
+
+            if not (readable or writable or exceptional):
+                # timeout will generate three empty lists
+                continue; # loop forever
+
+            self.read_each(readable)
+            self.write_each(writable)
+            self.catch_each(exceptional)
+
+    def read_each(self, readable):
+        server = self.server
+        inputs = self.inputs
+        outputs = self.outputs
+        message_queues = self.message_queues
 
         for sock in readable:
-            if sock is server:
+            if sock is server: # it is the server socket
                 conn, addr = sock.accept()
                 print('%s:%s connected' % addr)
                 conn.setblocking(False)
                 inputs.append(conn)
                 message_queues[conn] = Queue.Queue()
-            else: # sock is a conn
+            else: # it is a connection socket
                 obj = sock.recvobj()
                 if not obj:
                     # treat empty message as closed connection
-                    print('%s:%s disconnected' % addr)
+                    print('%s:%s disconnected' % sock.getpeername())
                     if sock in outputs:
                         outputs.remove(sock)
 
@@ -124,12 +152,17 @@ def select_on(server):
                     sock.close()
                     del message_queues[sock]
                 else:
-                    response = route(obj)
+                    response = compute_on(obj) # caution: would block!
                     if response:
                         message_queues[sock].put(response)
 
                     if sock not in outputs:
                         outputs.append(sock)
+
+
+    def write_each(self, writable):
+        outputs = self.outputs
+        message_queues = self.message_queues
 
         for sock in writable:
             try:
@@ -140,6 +173,11 @@ def select_on(server):
             else:
                 sock.sendobj(obj)
 
+    def catch_each(self, exceptional):
+        inputs = self.inputs
+        outputs = self.outputs
+        message_queues = self.message_queues
+
         for sock in exceptional:
             print('%s:%s exception' % sock.getpeername())
             if sock in outputs:
@@ -149,17 +187,11 @@ def select_on(server):
             sock.close()
             del message_queues[sock]
 
-def start(host, port):
-    bson.patch_socket()
 
-    server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    server.setblocking(False)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR  , 1)
-    server.bind((host, port))
-    server.listen(5) # allow max 5 in waiting list
+def start(host, port):
+    server = Server(host, port)
 
     try:
-        while True: # loop forever
-            select_on(server)
+        server.start_forever()
     except KeyboardInterrupt:
         exit()

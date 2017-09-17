@@ -4,10 +4,12 @@ How to run:
     $ cat examples/server.py | python
 """
 
+import time
 from bson_rpc import rpc, start_server
 
 @rpc
 def add(a, b):
+    #time.sleep(5.0) # would block all
     return a + b
 
 def main(host, port):
