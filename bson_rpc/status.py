@@ -22,7 +22,8 @@
 #
 
 ok = {'error_code': 0, 'result': None}
-invoke_error = {'error_code': -1, 'error_msg': 'failed to call function'}
-function_not_found = {'error_code': -2, 'error_msg': 'function not found'}
-function_not_callable = {'error_code': -3, 'error_msg': 'function not callable'}
+unknown_message = {'error_code': -1, 'error_msg': 'unknown message'}
+invoke_error = {'error_code': -2, 'error_msg': 'failed to call function'}
+function_not_found = {'error_code': -3, 'error_msg': 'function not found'}
+function_not_callable = {'error_code': -4, 'error_msg': 'function not callable'}
 

@@ -108,7 +108,7 @@ def log(sock, *args):
         conn_str = 'broken client'
 
     message = ' '.join(map(lambda x: str(x), args))
-    print(datetime, conn_str, message)
+    print(datetime, conn_str, message.decode('unicode_escape'))
 
 class Server:
     def __init__(self, host, port):
@@ -167,8 +167,7 @@ class Server:
 
                 if obj:
                     response = compute_on(obj) # caution: would block!
-                    log(sock, 'RPC', obj)
-                    print('in:', response)
+                    log(sock, 'REQUEST', obj)
                     message_queues[sock].put(response)
 
                     if sock not in outputs:
