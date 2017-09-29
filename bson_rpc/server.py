@@ -197,6 +197,8 @@ class Server:
                     sock.sendobj(obj)
             except Queue.Empty:
                 outputs.remove(sock)
+            except socket.error, msg:
+                log(sock, 'socket.error', msg)
 
     def catch_each(self, exceptional):
         inputs = self.inputs
