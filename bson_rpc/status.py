@@ -22,8 +22,11 @@
 #
 
 ok = {'error_code': 0, 'result': None}
-unknown_message = {'error_code': -1, 'error_msg': 'unknown message'}
-invoke_error = {'error_code': -2, 'error_msg': 'failed to call function'}
-function_not_found = {'error_code': -3, 'error_msg': 'function not found'}
-function_not_callable = {'error_code': -4, 'error_msg': 'function not callable'}
+unknown_message = {'error_code': 401, 'error_msg': 'unknown message'}
+invoke_error = {'error_code': 402, 'error_msg': 'failed to call function'}
+function_not_found = {'error_code': 404, 'error_msg': 'function not found'}
+function_not_callable = {'error_code': 405, 'error_msg': 'function not callable'}
+
+#network error
+connection_error: {'error_code': 501, 'error_msg': 'connection error'},
 
