@@ -36,6 +36,7 @@ class Proxy:
         self.sock.connect((host, port))
 
     def use_service(self, namelist):
+        namelist.append('__stats__')
         for name in namelist:
             f = self.invoke_func(name);
             setattr(self, name, f);

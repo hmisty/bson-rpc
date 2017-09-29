@@ -31,6 +31,7 @@ import bson
 from . import status
 
 # the global function map that remotely callable
+# { fn: [func, invoke_count, accumulated_time] }
 remote_functions = dict()
 
 def rpc(func, name=None):
@@ -48,8 +49,25 @@ def rpc(func, name=None):
 
     """
     global remote_functions
-    remote_functions[name or func.__name__] = func
+    remote_functions[name or func.__name__] = [func, 0, 0]
     return func
+
+@rpc
+def __stats__():
+    rf = remote_functions
+    stats = {}
+    total_count = 0
+    total_time = 0
+    for fn in remote_functions:
+        count = remote_functions[fn][1]
+        time = remote_functions[fn][2]
+        stats[fn] = [count, time]
+        total_count += count
+        total_time += time
+
+    stats['*'] = [total_count, total_time]
+
+    return stats
 
 def invoke_func(fn, args=None):
     global remote_functions
@@ -60,7 +78,7 @@ def invoke_func(fn, args=None):
     if not remote_functions.has_key(fn):
         return status.function_not_found.copy()
 
-    f = remote_functions[fn]
+    f = remote_functions[fn][0]
     if not callable(f):
         return status.function_not_callable.copy()
 
@@ -78,6 +96,9 @@ def invoke_func(fn, args=None):
         response = status.ok.copy() # copy() before modify!
         response['result'] = result
         response['time'] = elapsed
+
+        remote_functions[fn][1] += 1
+        remote_functions[fn][2] += elapsed
     except Exception as error:
         response = status.invoke_error.copy()
         response['error_msg'] = str(error)

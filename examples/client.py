@@ -24,5 +24,8 @@ if __name__ == '__main__':
     err, res = conn.echo('你好')
     print('result: %s' % str(res))
 
+    err, res = conn.__stats__()
+    print('result: %s' % str(res))
+
     conn.disconnect();
     print('disconnected from server %s' % host)
