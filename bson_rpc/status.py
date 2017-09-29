@@ -28,5 +28,5 @@ function_not_found = {'error_code': 404, 'error_msg': 'function not found'}
 function_not_callable = {'error_code': 405, 'error_msg': 'function not callable'}
 
 #network error
-connection_error: {'error_code': 501, 'error_msg': 'connection error'},
+connection_error = {'error_code': 501, 'error_msg': 'connection error'}
 
