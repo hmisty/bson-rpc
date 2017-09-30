@@ -128,7 +128,7 @@ def log(sock, *args):
     except:
         conn_str = 'broken client'
 
-    message = ' '.join(map(lambda x: str(x), args))
+    message = ' '.join(map(lambda x: str(x), args)).replace('\n', '').replace('\r', '')
     print(datetime, conn_str, message.decode('unicode_escape'))
 
 class Server:
@@ -152,6 +152,7 @@ class Server:
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((self.host, self.port))
         server.listen(5) # allow max 5 in waiting list
+        log(server, 'Listening on', self.host, self.port)
 
         inputs = self.inputs
         while inputs:
