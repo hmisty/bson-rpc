@@ -101,7 +101,7 @@ def invoke_func(fn, args=None):
         remote_functions[fn][2] += elapsed
     except Exception as error:
         response = status.invoke_error.copy()
-        response['error_msg'] = str(error)
+        response['error_msg'] = repr(error)
 
     return response
 
