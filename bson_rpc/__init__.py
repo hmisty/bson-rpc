@@ -8,6 +8,8 @@ __project__ = PROJECT = __name__
 import server as server
 rpc = server.rpc
 start_server = server.start
+stop_server = server.stop
+server_status = server.status
 
 import client as client
 connect = client.connect

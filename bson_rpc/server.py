@@ -22,6 +22,10 @@
 #
 
 from __future__ import print_function
+import os
+import sys
+import signal
+import atexit
 import time
 import socket
 import select
@@ -29,6 +33,11 @@ import Queue
 import bson
 
 from . import status
+from . import config
+
+# the global workers _id list
+# for checking/stopping workers
+workers = []
 
 # the global function map that remotely callable
 # { fn: [func, invoke_count, accumulated_time] }
@@ -44,8 +53,8 @@ def rpc(func, name=None):
     or use as decorator
 
     >>> @rpc
-        def echo(s):
-            return s
+    def echo(s):
+        return s
 
     """
     global remote_functions
@@ -126,19 +135,27 @@ def log(sock, *args):
     try:
         conn_str = '%s:%s' % sock.getpeername()
     except:
-        conn_str = 'broken client'
+        conn_str = 'unconnected'
 
     message = ' '.join(map(lambda x: str(x), args)).replace('\n', '').replace('\r', '')
     print(datetime, conn_str, message.decode('unicode_escape'))
 
 class Server:
     def __init__(self, host, port):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._id = 0 # for numbering the workder processes
+        self.host = host
+        self.port = port
+
+        server = self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setblocking(False)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((self.host, self.port))
+        server.listen(5) # allow max 5 in waiting list
+        log(server, 'Listening on', self.host, self.port)
+
         self.inputs = [self.server] # sockets to read
         self.outputs = [] # sockets to write
         self.message_queues = {} # socket message queue
-        self.host = host
-        self.port = port
 
     def start_forever(self, polling_interval=0.5):
         bson.patch_socket()
@@ -147,12 +164,6 @@ class Server:
         inputs = self.inputs
         outputs = self.outputs
         message_queues = self.message_queues
-
-        server.setblocking(False)
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server.bind((self.host, self.port))
-        server.listen(5) # allow max 5 in waiting list
-        log(server, 'Listening on', self.host, self.port)
 
         inputs = self.inputs
         while inputs:
@@ -174,13 +185,27 @@ class Server:
         message_queues = self.message_queues
 
         for sock in readable:
-            if sock is server: # it is the server socket
-                conn, addr = sock.accept()
+            if sock is server:
+                # it is the server socket
+
+                # while trying to accept, we need to handle the "thundering bird" problem
+                # because in *nix, all child processes will be waken up to accept
+                # only one child can succeed
+                # others will fail to accept and go back to loop again
+                # be careful not to crash when accept failed
+                try:
+                    conn, addr = sock.accept()
+                except:
+                    return
+
                 log(conn, 'CONNECT')
                 conn.setblocking(False)
                 inputs.append(conn)
                 message_queues[conn] = Queue.Queue()
-            else: # it is a connection socket
+
+            else:
+                # it is a connection socket
+
                 obj = None
                 try:
                     obj = sock.recvobj()
@@ -236,11 +261,160 @@ class Server:
             sock.close()
             del message_queues[sock]
 
+"""
+get daemon pid
+"""
+def get_pid():
+    try:
+        pf = file(config.settings['pid_file'], 'r')
+        pid = int(pf.read().strip())
+        pf.close()
+    except IOError:
+        pid = None
+    except SystemExit:
+        pid = None
 
-def start(host, port):
-    server = Server(host, port)
+    return pid
+
+"""
+delete daemon pid file
+"""
+def del_pid():
+    if os.path.exists(config.settings['pid_file']):
+        os.remove(config.settings['pid_file'])
+
+"""
+daemonize
+"""
+def daemonize():
+    try:
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)
+    except OSError, e:
+        sys.stderr.write('fork #1 failed: %d (%s)\n' % (e.errno, e.strerror))
+        sys.exit(1)
+
+    os.chdir(config.settings['home_dir'])
+    os.setsid()
+    os.umask(config.settings['umask'])
 
     try:
-        server.start_forever()
-    except KeyboardInterrupt:
-        exit()
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)
+    except OSError, e:
+        sys.stderr.write('fork #2 failed: %d (%s)\n' % (e.errno, e.strerror))
+        sys.exit(1)
+
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+    si = file(os.devnull, 'r')
+    so = file(config.settings['log_file'], 'a+', 0)
+    se = file(config.settings['err_file'], 'a+', 0)
+
+    os.dup2(si.fileno(), sys.stdin.fileno())
+    os.dup2(so.fileno(), sys.stdout.fileno())
+    os.dup2(se.fileno(), sys.stderr.fileno())
+
+    def sig_handler(signum, frame):
+        print('daemon exiting ...')
+
+    signal.signal(signal.SIGTERM, sig_handler)
+    signal.signal(signal.SIGINT, sig_handler)
+
+    print('daemon process started ...')
+
+    atexit.register(del_pid)
+    pid = str(os.getpid())
+    file(config.settings['pid_file'], 'w+').write('%s\n' % pid)
+
+"""
+exported as start_server(...)
+"""
+def start(host, port, n_worker=2, settings={}):
+    config.settings.update(settings)
+    print('starting ...')
+
+    # daemonize the parent and create a guard process to protect the workers
+    # i.e. restart them if they are killed abnormally
+    pid = get_pid()
+    if pid:
+        sys.stderr.write('%s already running' % pid)
+        sys.exit(1)
+    else:
+        daemonize()
+
+        server = Server(host, port)
+        global workers
+        for i in range(n_worker):
+            pid = os.fork()
+
+            if pid:
+                # in parent process
+                workers.append(pid)
+            else:
+                # pid == 0, in child process
+                server._id = i
+                server.start_forever()
+                sys.exit(1)
+
+        print(workers)
+
+"""
+exported as stop_server(...)
+"""
+def stop(settings={}):
+    config.settings.update(settings)
+    print('stopping all workers ...')
+
+    pid = get_pid()
+    if not pid:
+        pid_file = config.settings['pid_file']
+        msg = 'pid file [%s] does not exist. Not running?\n' % pid_file
+        sys.stderr.write(msg)
+        if os.path.exists(pid_file):
+            os.remove(pid_file)
+            return
+    #try to kill the daemon process
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError, err:
+        err = str(err)
+        if err.find('No such process') > 0:
+            pid_file = config.settings['pid_file']
+            if os.path.exists(pid_file):
+                os.remove(pid_file)
+            else:
+                print(str(err))
+                sys.exit(1)
+
+    # and kill all the workers
+    global workers
+    for _id in workers:
+        try:
+            os.kill(_id, signal.SIGTERM)
+        except:
+            pass
+
+    print('stopped!')
+
+"""
+exported as server_status(...)
+"""
+def status(settings={}):
+    config.settings.update(settings)
+    pid = get_pid()
+    pids = {
+        '%s(guard)' % pid: pid,
+    }
+    pids.update(dict([('%s(worker)' % w,w) for w in workers]))
+
+    for k, p in pids.items():
+        if p and os.path.exists('/proc/%d' % p):
+            pids[k] = 'running'
+        else:
+            pids[k] = 'dead'
+
+    print(pids)

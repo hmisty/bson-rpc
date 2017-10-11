@@ -4,8 +4,9 @@ How to run:
     $ cat examples/server.py | python
 """
 
+import sys
 import time
-from bson_rpc import rpc, start_server
+from bson_rpc import rpc, start_server, stop_server, server_status
 
 @rpc
 def add(a, b):
@@ -16,12 +17,21 @@ def add(a, b):
 def echo(s):
     return s
 
-def main(host, port):
-    start_server(host, port)
-    #start_server('ipc:///tmp/bson_rpc')
-
 if __name__ == '__main__':
     host = '127.0.0.1'
     port = 8181
-    main(host, port)
 
+    usage = 'Usage: python %s <start|stop|status>' % sys.argv[0]
+    if len(sys.argv) < 2:
+        print usage
+        sys.exit(1)
+
+    if sys.argv[1] == 'start':
+        start_server(host, port, settings={'pid_file': '/tmp/brpc.pid', 'log_file': '/tmp/brpc.log', 'err_file': '/tmp/brpc.err'})
+    elif sys.argv[1] == 'stop':
+        stop_server(settings={'pid_file': '/tmp/brpc.pid'})
+    elif sys.argv[1] == 'status':
+        server_status(settings={'pid_file': '/tmp/brpc.pid'})
+    else:
+        print usage
+        sys.exit(1)
