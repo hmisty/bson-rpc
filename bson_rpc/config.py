@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2017 Evan Liu (hmisty)
+# Copyright (c) 2017 Evan Liu (hmisty@gmail.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,29 @@
 # SOFTWARE.
 #
 
-settings = {
-    'home_dir': '/tmp',
-    'umask': 022,
-    'pid_file': '/var/run/bson-rpc.pid',
-    'log_file': '/var/log/bson-rpc.log',
-    'err_file': '/var/log/bson-rpc.err',
-}
+
+class Settings:
+    _ = {
+        'n_workers': 2,
+        'home_dir': '/tmp',
+        'umask': 022,
+        'pid_file': '/var/run/bson-rpc.pid',
+        'log_file': '/var/log/bson-rpc.out',
+        'err_file': '/var/log/bson-rpc.err',
+    }
+
+    def __repr__(self):
+        return repr(self._)
+
+    def __getattr__(self, name):
+        return self._[name]
+
+    def __setattr__(self, name, value):
+        self._[name] = value
+
+    def update(self, settings):
+        self._.update(settings)
+
+# use the instance
+settings = Settings()
+
