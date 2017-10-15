@@ -29,6 +29,7 @@ import atexit
 import time
 
 from .config import settings
+from .server import Server
 
 # the global workers pid list
 # for checking/stopping workers
@@ -104,4 +105,107 @@ def daemonize():
     file(settings.pid_file, 'w+', 0).write('%s\n' % pid)
 
     print ('daemon pid_file(%s) created' % settings.pid_file)
+
+
+"""
+exported
+"""
+def start(host, port, local_settings={}):
+    settings.update(local_settings)
+    print('starting ...')
+
+    # daemonize the parent
+    # * status workers
+    # * start/stop/restart a worker
+    # * auto-restart if a worker dies
+    pid = daemon.get_pid()
+    if pid:
+        sys.stderr.write('%s already running' % pid)
+        sys.exit(1)
+    else:
+        daemon.daemonize()
+
+        server = Server(host, port)
+        for i in range(settings.n_workers):
+            pid = os.fork()
+
+            if pid:
+                # in parent process
+                daemon.workers.append(pid)
+            else:
+                # fork pid == 0, in child process
+                server.pid = os.getpid() # save worker's pid
+                server.start_forever()
+                sys.exit(1)
+
+        print(daemon.workers)
+        print('started!')
+
+        # daemon process entering event loop
+        n_sheeps = 0
+        while True:
+            n_sheeps += 1
+            time.sleep(1)
+            print('daemon is counting sheeps(%s)' % n_sheeps)
+
+
+"""
+exported
+"""
+def stop(local_settings={}):
+    settings.update(local_settings)
+    print('stopping all workers ...')
+
+    pid = daemon.get_pid()
+    if not pid:
+        pid_file = settings.pid_file
+        msg = 'pid file [%s] does not exist. Not running?\n' % pid_file
+        sys.stderr.write(msg)
+        if os.path.exists(pid_file):
+            os.remove(pid_file)
+
+        return
+
+    #try to kill the daemon process
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError, err:
+        err = str(err)
+        if err.find('No such process') > 0:
+            pid_file = settings.pid_file
+            if os.path.exists(pid_file):
+                os.remove(pid_file)
+            else:
+                print(str(err))
+                sys.exit(1)
+
+    # and kill all the workers
+    for pid in daemon.workers:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except:
+            pass
+
+    print('stopped!')
+
+"""
+exported
+"""
+def status(local_settings={}):
+    settings.update(local_settings)
+
+    pid = daemon.get_pid()
+    pids = {
+        '%s(guard)' % pid: pid,
+    }
+    pids.update(dict([('%s(worker)' % w,w) for w in daemon.workers]))
+
+    for k, p in pids.items():
+        if p and os.path.exists('/proc/%d' % p):
+            pids[k] = 'running'
+        else:
+            pids[k] = 'dead'
+
+    print(pids)
+
 

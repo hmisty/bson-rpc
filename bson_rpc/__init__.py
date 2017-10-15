@@ -5,13 +5,11 @@ __project__ = PROJECT = __name__
 
 #__all__ = ['rpc', 'start_server']
 
-import server as server
+import server
 rpc = server.rpc
-start_server = server.start
-stop_server = server.stop
-server_status = server.status
+start_server = server.start_server
 
-import client as client
+import client
 connect = client.connect
 
 import sys

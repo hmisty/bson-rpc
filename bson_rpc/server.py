@@ -33,8 +33,6 @@ import Queue
 import bson
 
 import status
-import daemon
-from .config import settings
 
 # the global function map that remotely callable
 # { fn: [func, invoke_count, accumulated_time] }
@@ -57,6 +55,18 @@ def rpc(func, name=None):
     global remote_functions
     remote_functions[name or func.__name__] = [func, 0, 0]
     return func
+
+def start_server(host = '127.0.0.1', port = 8181):
+    """
+    start_server
+
+    >>> from bson_rpc.server import start_server
+    >>> start_server()
+    """
+    server = Server(host, port)
+
+    print("server started, listening on %s:%s" % (host, port))
+    server.start_forever()
 
 @rpc
 def __stats__():
@@ -154,7 +164,7 @@ class Server:
         self.outputs = [] # sockets to write
         self.message_queues = {} # socket message queue
 
-    def start_forever(self, polling_interval=0.5):
+    def start_forever(self, polling_interval=60):
         bson.patch_socket()
 
         server = self.server
@@ -257,106 +267,4 @@ class Server:
             inputs.remove(sock)
             sock.close()
             del message_queues[sock]
-
-"""
-exported as start_server(...)
-"""
-def start(host, port, local_settings={}):
-    settings.update(local_settings)
-    print('starting ...')
-
-    # daemonize the parent
-    # * status workers
-    # * start/stop/restart a worker
-    # * auto-restart if a worker dies
-    pid = daemon.get_pid()
-    if pid:
-        sys.stderr.write('%s already running' % pid)
-        sys.exit(1)
-    else:
-        daemon.daemonize()
-
-        server = Server(host, port)
-        for i in range(settings.n_workers):
-            pid = os.fork()
-
-            if pid:
-                # in parent process
-                daemon.workers.append(pid)
-            else:
-                # fork pid == 0, in child process
-                server.pid = os.getpid() # save worker's pid
-                server.start_forever()
-                sys.exit(1)
-
-        print(daemon.workers)
-        print('started!')
-
-        # daemon process entering event loop
-        n_sheeps = 0
-        while True:
-            n_sheeps += 1
-            time.sleep(1)
-            print('daemon is counting sheeps(%s)' % n_sheeps)
-
-
-"""
-exported as stop_server(...)
-"""
-def stop(local_settings={}):
-    settings.update(local_settings)
-    print('stopping all workers ...')
-
-    pid = daemon.get_pid()
-    if not pid:
-        pid_file = settings.pid_file
-        msg = 'pid file [%s] does not exist. Not running?\n' % pid_file
-        sys.stderr.write(msg)
-        if os.path.exists(pid_file):
-            os.remove(pid_file)
-
-        return
-
-    #try to kill the daemon process
-    try:
-        os.kill(pid, signal.SIGTERM)
-    except OSError, err:
-        err = str(err)
-        if err.find('No such process') > 0:
-            pid_file = settings.pid_file
-            if os.path.exists(pid_file):
-                os.remove(pid_file)
-            else:
-                print(str(err))
-                sys.exit(1)
-
-    # and kill all the workers
-    for pid in daemon.workers:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except:
-            pass
-
-    print('stopped!')
-
-"""
-exported as server_status(...)
-"""
-def status(local_settings={}):
-    settings.update(local_settings)
-
-    pid = daemon.get_pid()
-    pids = {
-        '%s(guard)' % pid: pid,
-    }
-    pids.update(dict([('%s(worker)' % w,w) for w in daemon.workers]))
-
-    for k, p in pids.items():
-        if p and os.path.exists('/proc/%d' % p):
-            pids[k] = 'running'
-        else:
-            pids[k] = 'dead'
-
-    print(pids)
-
 

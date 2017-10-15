@@ -6,7 +6,7 @@ How to run:
 
 import sys
 import time
-from bson_rpc import rpc, start_server, stop_server, server_status
+from bson_rpc import rpc, start_server, daemon
 
 @rpc
 def add(a, b):
@@ -18,6 +18,9 @@ def echo(s):
     return s
 
 if __name__ == '__main__':
+    start_server()
+    sys.exit(0)
+
     host = '127.0.0.1'
     port = 8181
 
