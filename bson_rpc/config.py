@@ -24,6 +24,8 @@
 
 class Settings:
     _ = {
+        'host': '127.0.0.1',
+        'port': 8181,
         'n_workers': 2,
         'home_dir': '/tmp',
         'umask': 022,

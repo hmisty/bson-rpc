@@ -27,9 +27,13 @@ import sys
 import signal
 import atexit
 import time
+import select
 
 from .config import settings
 from .server import Server
+
+# global daemon running
+keep_running = False
 
 # the global workers pid list
 # for checking/stopping workers
@@ -93,6 +97,8 @@ def daemonize():
     os.dup2(se.fileno(), sys.stderr.fileno())
 
     def sig_handler(signum, frame):
+        global keep_running
+        keep_running = False
         print('daemon exiting ...')
 
     signal.signal(signal.SIGTERM, sig_handler)
@@ -106,11 +112,16 @@ def daemonize():
 
     print ('daemon pid_file(%s) created' % settings.pid_file)
 
+"""
+exported
+"""
+def setup(local_settings):
+    settings.update(local_settings)
 
 """
 exported
 """
-def start(host, port, local_settings={}):
+def start(local_settings={}):
     settings.update(local_settings)
     print('starting ...')
 
@@ -118,35 +129,57 @@ def start(host, port, local_settings={}):
     # * status workers
     # * start/stop/restart a worker
     # * auto-restart if a worker dies
-    pid = daemon.get_pid()
+    pid = get_pid()
     if pid:
-        sys.stderr.write('%s already running' % pid)
+        sys.stderr.write('%s already running\n' % pid)
         sys.exit(1)
     else:
-        daemon.daemonize()
+        daemonize()
 
+        host = settings.host
+        port = settings.port
         server = Server(host, port)
         for i in range(settings.n_workers):
             pid = os.fork()
 
             if pid:
                 # in parent process
-                daemon.workers.append(pid)
+                workers.append(pid)
             else:
                 # fork pid == 0, in child process
                 server.pid = os.getpid() # save worker's pid
-                server.start_forever()
-                sys.exit(1)
+                try:
+                    server.start_forever()
+                except select.error, e:
+                    print('server quit running... ', str(e))
+                    sys.exit(1)
 
-        print(daemon.workers)
+        print(workers)
         print('started!')
 
         # daemon process entering event loop
+        global keep_running
+        keep_running = True
         n_sheeps = 0
-        while True:
+        while keep_running:
             n_sheeps += 1
             time.sleep(1)
             print('daemon is counting sheeps(%s)' % n_sheeps)
+
+        # daemon entering exiting process
+
+        print('stopping all workers ...')
+
+        # kill all the workers
+        for pid in workers:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError, err:
+                print(err)
+                err = str(err)
+                pass
+
+        print('stopped!')
 
 
 """
@@ -154,9 +187,9 @@ exported
 """
 def stop(local_settings={}):
     settings.update(local_settings)
-    print('stopping all workers ...')
+    print('stopping...')
 
-    pid = daemon.get_pid()
+    pid = get_pid()
     if not pid:
         pid_file = settings.pid_file
         msg = 'pid file [%s] does not exist. Not running?\n' % pid_file
@@ -170,6 +203,7 @@ def stop(local_settings={}):
     try:
         os.kill(pid, signal.SIGTERM)
     except OSError, err:
+        print(errkeep_running)
         err = str(err)
         if err.find('No such process') > 0:
             pid_file = settings.pid_file
@@ -179,14 +213,6 @@ def stop(local_settings={}):
                 print(str(err))
                 sys.exit(1)
 
-    # and kill all the workers
-    for pid in daemon.workers:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except:
-            pass
-
-    print('stopped!')
 
 """
 exported
@@ -194,11 +220,11 @@ exported
 def status(local_settings={}):
     settings.update(local_settings)
 
-    pid = daemon.get_pid()
+    pid = get_pid()
     pids = {
         '%s(guard)' % pid: pid,
     }
-    pids.update(dict([('%s(worker)' % w,w) for w in daemon.workers]))
+    pids.update(dict([('%s(worker)' % w,w) for w in workers]))
 
     for k, p in pids.items():
         if p and os.path.exists('/proc/%d' % p):
