@@ -27,7 +27,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     local_settings={
-        'n_workers': 1,
+        'n_workers': 2,
         'pid_file': '/tmp/brpc.pid',
         'log_file': '/tmp/brpc.out',
         'err_file': '/tmp/brpc.err',

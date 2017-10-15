@@ -27,6 +27,7 @@ import sys
 import signal
 import atexit
 import time
+import socket
 import select
 
 from .config import settings
@@ -39,9 +40,7 @@ keep_running = False
 # for checking/stopping workers
 workers = []
 
-"""
-get daemon pid
-"""
+# get daemon pid
 def get_pid():
     try:
         pf = file(settings.pid_file, 'r')
@@ -54,16 +53,21 @@ def get_pid():
 
     return pid
 
-"""
-delete daemon pid file
-"""
+# delete daemon pid file
 def del_pid():
     if os.path.exists(settings.pid_file):
         os.remove(settings.pid_file)
 
-"""
-daemonize
-"""
+# check if a pid is alive
+def is_pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+    except:
+        return False
+    else:
+        return True
+
+# daemonize
 def daemonize():
     try:
         pid = os.fork()
@@ -96,13 +100,18 @@ def daemonize():
     os.dup2(so.fileno(), sys.stdout.fileno())
     os.dup2(se.fileno(), sys.stderr.fileno())
 
-    def sig_handler(signum, frame):
+    def exit_handler(signum, frame):
         global keep_running
         keep_running = False
         print('daemon exiting ...')
 
-    signal.signal(signal.SIGTERM, sig_handler)
-    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, exit_handler)
+    signal.signal(signal.SIGINT, exit_handler)
+
+    def child_exit_handler(signum, frame):
+        print('a child exit')
+
+    signal.signal(signal.SIGCHLD, child_exit_handler)
 
     print('daemon process started ...')
 
@@ -112,15 +121,11 @@ def daemonize():
 
     print ('daemon pid_file(%s) created' % settings.pid_file)
 
-"""
-exported
-"""
+# exported
 def setup(local_settings):
     settings.update(local_settings)
 
-"""
-exported
-"""
+# exported
 def start(local_settings={}):
     settings.update(local_settings)
     print('starting ...')
@@ -128,7 +133,7 @@ def start(local_settings={}):
     # daemonize the parent
     # * status workers
     # * start/stop/restart a worker
-    # * auto-restart if a worker dies
+    # * auto-restart if a worker dies TODO
     pid = get_pid()
     if pid:
         sys.stderr.write('%s already running\n' % pid)
@@ -160,11 +165,32 @@ def start(local_settings={}):
         # daemon process entering event loop
         global keep_running
         keep_running = True
-        n_sheeps = 0
+
+        try:
+            os.unlink(settings.sock_file)
+        except OSError:
+            if os.path.exists(settings.sock_file):
+                raise
+
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(settings.sock_file)
+        sock.listen(1)
+
         while keep_running:
-            n_sheeps += 1
-            time.sleep(1)
-            print('daemon is counting sheeps(%s)' % n_sheeps)
+            try:
+                conn, addr = sock.accept()
+
+                buf_size = 1024
+                request = conn.recv(buf_size)
+
+                if request == 'workers':
+                    conn.sendall(','.join([str(w) for w in workers]))
+                else:
+                    conn.sendall('unknown request: %s ' % request)
+
+                conn.close()
+            except socket.error, e:
+                print(repr(e))
 
         # daemon entering exiting process
 
@@ -173,7 +199,8 @@ def start(local_settings={}):
         # kill all the workers
         for pid in workers:
             try:
-                os.kill(pid, signal.SIGTERM)
+                #os.kill(pid, signal.SIGTERM)
+                os.kill(pid, signal.SIGKILL)
             except OSError, err:
                 err = repr(err)
                 print(err)
@@ -214,20 +241,27 @@ def stop(local_settings={}):
                 sys.exit(1)
 
 
-"""
-exported
-"""
+# exported
 def status(local_settings={}):
     settings.update(local_settings)
 
     pid = get_pid()
     pids = {
-        '%s(guard)' % pid: pid,
+        '%s(daemon)' % pid: pid,
     }
-    pids.update(dict([('%s(worker)' % w,w) for w in workers]))
+
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.connect(settings.sock_file)
+    sock.sendall('workers')
+    buf_size = 1024
+    workers = sock.recv(buf_size)
+    sock.close()
+
+    worker_list = workers.split(',')
+    pids.update(dict([('%s(worker)' % w, int(w)) for w in worker_list]))
 
     for k, p in pids.items():
-        if p and os.path.exists('/proc/%d' % p):
+        if p and is_pid_alive(p):
             pids[k] = 'running'
         else:
             pids[k] = 'dead'

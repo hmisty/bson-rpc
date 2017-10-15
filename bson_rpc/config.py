@@ -32,6 +32,7 @@ class Settings:
         'pid_file': '/var/run/bson-rpc.pid',
         'log_file': '/var/log/bson-rpc.out',
         'err_file': '/var/log/bson-rpc.err',
+        'sock_file': '/tmp/bson-rpc.sock', # for ipc with daemon process
     }
 
     def __repr__(self):
