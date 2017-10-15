@@ -151,7 +151,7 @@ def start(local_settings={}):
                 try:
                     server.start_forever()
                 except select.error, e:
-                    print('server quit running... ', str(e))
+                    print('server quit running... ', repr(e))
                     sys.exit(1)
 
         print(workers)
@@ -175,8 +175,8 @@ def start(local_settings={}):
             try:
                 os.kill(pid, signal.SIGTERM)
             except OSError, err:
+                err = repr(err)
                 print(err)
-                err = str(err)
                 pass
 
         print('stopped!')
@@ -203,14 +203,14 @@ def stop(local_settings={}):
     try:
         os.kill(pid, signal.SIGTERM)
     except OSError, err:
-        print(errkeep_running)
-        err = str(err)
+        err = repr(err)
+        print(err)
         if err.find('No such process') > 0:
             pid_file = settings.pid_file
             if os.path.exists(pid_file):
                 os.remove(pid_file)
             else:
-                print(str(err))
+                print(repr(err))
                 sys.exit(1)
 
 
