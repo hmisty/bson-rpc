@@ -79,7 +79,7 @@ def fork_a_server():
         # in parent process
         global workers
         workers.append(pid)
-
+        return
     else:
         # fork pid == 0, in child process
         global server
@@ -164,19 +164,29 @@ def start(local_settings={}):
 
         # auto-restart child
         def child_exit_handler(signum, frame):
+            pid = os.wait()[0]
+            global workers
+            workers.remove(pid)
             print('worker(%s) shutdown. fork a new...' % pid)
             fork_a_server()
+            return
 
         signal.signal(signal.SIGCHLD, child_exit_handler)
 
         # respond to termination
-        def exit_handler(signum, frameV):
+        def terminate_handler(signum, frame):
             global keep_running
             keep_running = False
-            print('daemon exiting...')
+            print('daemon terminated...')
 
-        signal.signal(signal.SIGTERM, exit_handler)
-        signal.signal(signal.SIGINT, exit_handler)
+        signal.signal(signal.SIGTERM, terminate_handler)
+
+        def interrupt_handler(signum, frame):
+            global keep_running
+            keep_running = False
+            print('daemon interrupted...')
+
+        signal.signal(signal.SIGINT, interrupt_handler)
 
         # daemon process entering event loop
         global keep_running
