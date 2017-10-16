@@ -29,9 +29,13 @@ import atexit
 import time
 import socket
 import select
+import traceback
 
 from .config import settings
 from .server import Server
+
+# global server instance
+server = None
 
 # global daemon running
 keep_running = False
@@ -67,6 +71,25 @@ def is_pid_alive(pid):
     else:
         return True
 
+# fork a server
+def fork_a_server():
+    pid = os.fork()
+
+    if pid:
+        # in parent process
+        global workers
+        workers.append(pid)
+
+    else:
+        # fork pid == 0, in child process
+        global server
+        server.pid = os.getpid() # save worker's pid
+        try:
+            server.start_forever()
+        except select.error, e:
+            print('server quit running... ', repr(e))
+            sys.exit(1)
+
 # daemonize
 def daemonize():
     try:
@@ -100,20 +123,7 @@ def daemonize():
     os.dup2(so.fileno(), sys.stdout.fileno())
     os.dup2(se.fileno(), sys.stderr.fileno())
 
-    def exit_handler(signum, frame):
-        global keep_running
-        keep_running = False
-        print('daemon exiting ...')
-
-    signal.signal(signal.SIGTERM, exit_handler)
-    signal.signal(signal.SIGINT, exit_handler)
-
-    def child_exit_handler(signum, frame):
-        print('a child exit')
-
-    signal.signal(signal.SIGCHLD, child_exit_handler)
-
-    print('daemon process started ...')
+    print('daemon process started')
 
     atexit.register(del_pid)
     pid = str(os.getpid())
@@ -133,34 +143,40 @@ def start(local_settings={}):
     # daemonize the parent
     # * status workers
     # * start/stop/restart a worker
-    # * auto-restart if a worker dies TODO
+    # * auto-restart if a worker dies
     pid = get_pid()
     if pid:
-        sys.stderr.write('%s already running\n' % pid)
+        print('%s already running' % pid)
         sys.exit(1)
     else:
         daemonize()
 
-        host = settings.host
-        port = settings.port
-        server = Server(host, port)
+        global server
+        try:
+            server = Server(settings.host, settings.port)
+        except socket.error, e:
+            print('cannot initialize server: ', repr(e))
+
         for i in range(settings.n_workers):
-            pid = os.fork()
+            fork_a_server()
 
-            if pid:
-                # in parent process
-                workers.append(pid)
-            else:
-                # fork pid == 0, in child process
-                server.pid = os.getpid() # save worker's pid
-                try:
-                    server.start_forever()
-                except select.error, e:
-                    print('server quit running... ', repr(e))
-                    sys.exit(1)
+        print(workers, 'started!')
 
-        print(workers)
-        print('started!')
+        # auto-restart child
+        def child_exit_handler(signum, frame):
+            print('worker(%s) shutdown. fork a new...' % pid)
+            fork_a_server()
+
+        signal.signal(signal.SIGCHLD, child_exit_handler)
+
+        # respond to termination
+        def exit_handler(signum, frameV):
+            global keep_running
+            keep_running = False
+            print('daemon exiting...')
+
+        signal.signal(signal.SIGTERM, exit_handler)
+        signal.signal(signal.SIGINT, exit_handler)
 
         # daemon process entering event loop
         global keep_running
@@ -190,13 +206,14 @@ def start(local_settings={}):
 
                 conn.close()
             except socket.error, e:
-                print(repr(e))
+                print('daemon socket error:', traceback.format_exc())
 
         # daemon entering exiting process
 
         print('stopping all workers ...')
 
         # kill all the workers
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
         for pid in workers:
             try:
                 #os.kill(pid, signal.SIGTERM)
@@ -219,8 +236,8 @@ def stop(local_settings={}):
     pid = get_pid()
     if not pid:
         pid_file = settings.pid_file
-        msg = 'pid file [%s] does not exist. Not running?\n' % pid_file
-        sys.stderr.write(msg)
+        msg = 'pid file [%s] does not exist. is it not running?' % pid_file
+        print(msg)
         if os.path.exists(pid_file):
             os.remove(pid_file)
 
@@ -251,7 +268,13 @@ def status(local_settings={}):
     }
 
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(settings.sock_file)
+
+    try:
+        sock.connect(settings.sock_file)
+    except:
+        print('cannot connect to daemon(%s). is it not running?' % settings.sock_file)
+        sys.exit(1)
+
     sock.sendall('workers')
     buf_size = 1024
     workers = sock.recv(buf_size)
