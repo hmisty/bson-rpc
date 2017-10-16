@@ -9,6 +9,10 @@ import time
 from bson_rpc import rpc, start_server, daemon
 
 @rpc
+def hi():
+    return 'hi'
+
+@rpc
 def add(a, b):
     #time.sleep(1.0) # would block all
     return a + b
