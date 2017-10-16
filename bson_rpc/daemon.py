@@ -74,7 +74,7 @@ def daemonize():
         if pid > 0:
             sys.exit(0)
     except OSError, e:
-        sys.stderr.write('fork #1 failed: %d (%s)\n' % (e.errno, e.strerror))
+        print('fork1 failed', repr(e))
         sys.exit(1)
 
     os.chdir(settings.home_dir)
@@ -86,7 +86,7 @@ def daemonize():
         if pid > 0:
             sys.exit(0)
     except OSError, e:
-        sys.stderr.write('fork #2 failed: %d (%s)\n' % (e.errno, e.strerror))
+        print('fork2 failed', repr(e))
         sys.exit(1)
 
     sys.stdout.flush()
