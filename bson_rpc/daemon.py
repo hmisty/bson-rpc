@@ -182,8 +182,6 @@ def start(local_settings={}):
         signal.signal(signal.SIGTERM, terminate_handler)
 
         def interrupt_handler(signum, frame):
-            global keep_running
-            keep_running = False
             print('daemon interrupted...')
 
         signal.signal(signal.SIGINT, interrupt_handler)
@@ -216,7 +214,8 @@ def start(local_settings={}):
 
                 conn.close()
             except socket.error, e:
-                print('daemon socket error:', traceback.format_exc())
+                print('daemon interrupted, possibly because of sig_chld:', repr(e))
+                #print('daemon socket error:', traceback.format_exc())
 
         # daemon entering exiting process
 
