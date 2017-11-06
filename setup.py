@@ -46,10 +46,11 @@ if __name__ == "__main__":
 				],
 			scripts=[],
 			license= 'MIT',
-			keywords = ['BSON', 'bson-rpc', 'rpc'],
+			keywords = ['BSON', 'bson-rpc', 'brpc', 'rpc'],
 			classifiers = [
 				'Development Status :: 4 - Beta',
-				'Environment :: Web Environment',
+				'Topic :: Internet',
+				'Environment :: No Input/Output (Daemon)',
 				'Intended Audience :: Developers',
 				'License :: OSI Approved :: MIT License',
 				'Operating System :: OS Independent',
