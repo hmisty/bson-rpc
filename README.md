@@ -61,6 +61,10 @@ if __name__ == '__main__':
 
 nodejs: https://github.com/hmisty/bson-rpc-nodejs
 
+# For Contributors
+
+[Development Guide](DEV_GUIDE.md)
+
 ## Author and Contributors
 
 Author: Evan Liu (hmisty).
