@@ -93,7 +93,7 @@ proxy = new Client(['host-1', 'host-2', 'host-3', ...], 8181) //LOAD-BALANCE MOD
                    //to randomly connect to a host, try another if failed until no more host to try
 ```
 
-* Setting proxy fail mode
+* Set proxy connection failure mode
 
 Pseudo code:
 ```
@@ -125,7 +125,7 @@ proxy.function-name-1(arguments).then(function-handler) //in async mode
 
 * Disconnect from server
 
-We never do that because we use long connection.
+We never do that because we use persistent connection.
 
 ### Server APIs
 
