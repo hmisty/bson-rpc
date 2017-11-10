@@ -1,6 +1,10 @@
 # bson-rpc
 a lightweight, high performance, multilingual RPC library
 
+## Spec
+
+[Spec](SPEC.md)
+
 ## Design Principle
 
 1. f-a-a-s (function as a service).
