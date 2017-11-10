@@ -2,6 +2,13 @@
 
 ## Design objectives
 
+1. F-a-a-S (function as a service).
+2. Embedded library, instead of a stand-alone service for greatly lowering the ops effort. Very simple and easy to use.
+3. Light-weight. Native language implementations, no extra wrapper layers and compilation effort.
+4. High reliability and high availability.
+5. Optimized for high performance (max qps, query per second) instead of concurrent connections. Aim for inter-cloud micro-service frameworking, not for directly serving Internet end-users.
+6. Support multiple languages, in separate git repositories.
+
 ## Features and current implementations
 
 * Client
