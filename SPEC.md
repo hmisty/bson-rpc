@@ -1,4 +1,4 @@
-# Specification of bson-rpc microservice framework
+# Spec of bson-rpc microservice framework
 
 ## Design objectives
 
@@ -6,7 +6,7 @@
 
 * Client
 
-| *ID* | *Feature* | *Python* | *Nodejs* |
+| **ID** | **Feature** | **Python** | **Nodejs** |
 |------|-----------|----------|----------|
 | 1 | Persistent TCP connection | Yes | Yes |
 | 2 | BSON object send & receive over persistent TCP connection | Yes | Yes |
@@ -18,7 +18,7 @@
 
 * Server
 
-| *ID* | *Feature* | *Python* | *Nodejs* |
+| **ID** | **Feature** | **Python** | **Nodejs** |
 |------|-----------|----------|----------|
 | 1 | Persistent TCP connection | Yes | Yes |
 | 2 | BSON object send & receive over persistent TCP connection | Yes | Yes |
@@ -53,16 +53,14 @@ Server Reply:
 
 * Special function
 
-+-----------------+-------------+---------------+----------+
-| *function name* | *arguments* | *description* | *result* |
-+-----------------+-------------+---------------+----------+
-| \__stats__ | None | Get function call statistics | { function_name::String : \[ num_of_calls::Integer, milliseconds_cost::Integer ], ... }::BSON |
+| **function name** | **arguments** | **description* | **result** |
+|-------------------|---------------|----------------|------------|
+| \_\_stats\_\_ | None | Get function call statistics | { function_name::String : \[ num_of_calls::Integer, milliseconds_cost::Integer \], ... }::BSON |
 
 * Error codes
 
-+--------------+-----------------+---------------+
-| *error code* | *error message* | *description* |
-+--------------+-----------------+---------------+
+| **error code** | **error message** | **description** |
+|----------------|-------------------|-----------------|
 | 0 | success | success |
 | 401 | unknown message | unknown message |
 | 402 | the Error catched when invoking the function | invoke error |
