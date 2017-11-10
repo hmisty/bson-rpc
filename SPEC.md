@@ -6,7 +6,7 @@
 
 * Client
 
-|* ID *|* Feature *|* Python *|* Nodejs *|
+| *ID* | *Feature* | *Python* | *Nodejs* |
 |------|-----------|----------|----------|
 | 1 | Persistent TCP connection | Yes | Yes |
 | 2 | BSON object send & receive over persistent TCP connection | Yes | Yes |
@@ -18,7 +18,7 @@
 
 * Server
 
-|* ID *|* Feature *|* Python *|* Nodejs *|
+| *ID* | *Feature* | *Python* | *Nodejs* |
 |------|-----------|----------|----------|
 | 1 | Persistent TCP connection | Yes | Yes |
 | 2 | BSON object send & receive over persistent TCP connection | Yes | Yes |
@@ -54,14 +54,14 @@ Server Reply:
 * Special function
 
 +-----------------+-------------+---------------+----------+
-|* function name *|* arguments *|* description *|* result *|
+| *function name* | *arguments* | *description* | *result* |
 +-----------------+-------------+---------------+----------+
-| __stats__ | None | Get function call statistics | { function_name::String : [ num_of_calls::Integer, milliseconds_cost::Integer ], ... }::BSON |
+| \__stats__ | None | Get function call statistics | { function_name::String : \[ num_of_calls::Integer, milliseconds_cost::Integer ], ... }::BSON |
 
 * Error codes
 
 +--------------+-----------------+---------------+
-|* error code *|* error message *|* description *|
+| *error code* | *error message* | *description* |
 +--------------+-----------------+---------------+
 | 0 | success | success |
 | 401 | unknown message | unknown message |
