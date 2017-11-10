@@ -1,6 +1,6 @@
 # Spec of bson-rpc microservice framework
 
-## Design objectives
+## Design principles
 
 1. F-a-a-S (function as a service).
 2. Embedded library, instead of a stand-alone service for greatly lowering the ops effort. Very simple and easy to use.
