@@ -158,8 +158,6 @@ server.start_foreground() //on foreground for dev mode
 server.start_background() //like a daemon
 ```
 
-### Server APIs
-
 ## Deployment architecture
 
 * Node client:
