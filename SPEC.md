@@ -10,7 +10,7 @@
 |------|-----------|----------|----------|
 | 1 | Persistent TCP connection | Yes | Yes |
 | 2 | BSON object send & receive over persistent TCP connection | Yes | Yes |
-| 3 | Auto-restart / auto-reconnect | In-process auto-reconnect | Die when disconnect and rely on supervisor to restart |
+| 3 | Auto-restart / auto-reconnect | In-process auto-reconnect | Crash when disconnect and rely on supervisor to restart |
 | 4 | connect mode: local | No | Yes |
 | 5 | connect mode: standalone | Yes | Yes |
 | 6 | connect mode: stand-by | No | Yes |
@@ -53,7 +53,7 @@ Server Reply:
 
 * Special function
 
-| **function name** | **arguments** | **description* | **result** |
+| **function name** | **arguments** | **description** | **result** |
 |-------------------|---------------|----------------|------------|
 | \_\_stats\_\_ | None | Get function call statistics | { function_name::String : \[ num_of_calls::Integer, milliseconds_cost::Integer \], ... }::BSON |
 
@@ -67,6 +67,90 @@ Server Reply:
 | 404 | function not found | function not found |
 | 405 | function not callable | function not callable |
 | 501 | connection error | connection error |
+
+## APIs
+
+APIs are described in pseudo codes. Refer to de facto implementation in different languages for real API definitions.
+
+### Client APIs
+
+* Proxy initialization
+
+Pseudo code:
+```
+proxy = new Client() //LOCAL MODE. to connect to 127.0.0.1:8181
+proxy = new Client('x.x.x.x', 8181) //STAND-ALONE MODE. to connect to x.x.x.x:8181
+proxy = new Client('master', 'stand-by', 8181) //STAND-BY MODE. to connect to master:8181,
+                                               //auto fail-over to stand-by:8181 if failed
+proxy = new Client(['host-1', 'host-2', 'host-3', ...], 8181) //LOAD-BALANCE MODE.
+                   //to randomly connect to a host, try another if failed until no more host to try
+```
+
+* Setting proxy fail mode
+
+Pseudo code:
+```
+proxy.die_on_failure(false); //just throw Error on connection failure for caller code to catch and handle
+//default true, which will crash the process and replying on top-tier supervisor to restart it
+```
+
+* Explicitly propose remote functions to call
+
+Pseudo code:
+```
+proxy.use_service(['function-name-1', 'function-name-2', 'function-name-3', ...])
+```
+
+* Connect to server
+
+Pseudo code:
+```
+proxy.connect()
+```
+
+* Fire a remote function call
+
+Pseudo code:
+```
+err, result = proxy.function-name-1(arguments) //in sync mode
+proxy.function-name-1(arguments).then(function-handler) //in async mode
+```
+
+* Disconnect from server
+
+We never do that because we use long connection.
+
+### Server APIs
+
+* Server initialization
+
+Pseudo code:
+```
+server = new Server('x.x.x.x', 8181) //to listen x.x.x.x:8181
+```
+
+* Function declaration as remotely callable
+
+Pseudo code:
+```
+Decorator style:
+
+@rpc
+def function-name-1(arguments)
+
+Appender style:
+server['function-name-1'] = function definition
+```
+
+* start server
+
+Pseudo code:
+```
+server.start_foreground() //on foreground for dev mode
+server.start_background() //like a daemon
+```
+
+### Server APIs
 
 ## Deployment architecture
 
