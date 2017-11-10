@@ -139,6 +139,7 @@ Decorator style:
 def function-name-1(arguments)
 
 Appender style:
+
 server['function-name-1'] = function definition
 ```
 
