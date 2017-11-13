@@ -3,7 +3,7 @@
 
 """
 How to run:
-    $ cat examples/client.py | python
+    $ python examples/client.py
 """
 
 from bson_rpc import connect

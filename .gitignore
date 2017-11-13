@@ -100,8 +100,9 @@ ENV/
 # mypy
 .mypy_cache/
 
-# vim history files
+# vim history & tmp files
 .*~
+.*.swp
 
 # sdist generated
 MANIFEST
