@@ -150,7 +150,7 @@ class Proxy:
 # from bson_rpc import client
 # proxy = client.Proxy(host, port)
 def connect(*args):
-    proxy = Proxy(args)
+    proxy = Proxy(*args)
     proxy.connect()
     return proxy
 
