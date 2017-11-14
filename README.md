@@ -1,11 +1,9 @@
 # bson-rpc
 a lightweight, high performance, multilingual RPC library
 
-## Design Principle
+## Spec
 
-1. f-a-a-s (function as a service).
-2. optimized for max qps (query per second) instead of concurrent connections.
-3. aim to support multiple languages, in separate git repositories.
+[Spec](SPEC.md)
 
 ## Install
 
