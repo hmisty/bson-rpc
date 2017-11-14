@@ -24,7 +24,7 @@
 from __future__ import print_function
 from socket import socket
 import bson
-import sys
+import os
 import random
 
 from common import connection_mode
@@ -139,16 +139,22 @@ class Proxy:
     # invoke a function
     def invoke_func(self, name):
         def invoke_remote_func(*args, **kwargs):
-            # TODO try ... except and fail?
-            self.sock.sendobj({'fn': name, 'args': list(args)})
-            doc = self.sock.recvobj()
-            err = doc['error_code']
-            if (err == 0):
-                result = doc['result']
+            try:
+                self.sock.sendobj({'fn': name, 'args': list(args)})
+                doc = self.sock.recvobj()
+                err = doc['error_code']
+            except Exception, e:
+                self.sock.close()
+                self.sock = None
+                self.fail(repr(e))
             else:
-                result = doc['error_msg']
+                # reaches here if no exception
+                if (err == 0):
+                    result = doc['result']
+                else:
+                    result = doc['error_msg']
 
-            return err, result
+                return err, result
 
         return invoke_remote_func
 
@@ -166,7 +172,7 @@ class Proxy:
     def fail(self, error_msg = None):
         if self.DIE_ON_FAILURE:
             print('Die-On-Failure: ', error_msg)
-            sys.exit(1)
+            os._exit(1)
         else:
             raise Exception(error_msg)
 
