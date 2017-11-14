@@ -25,6 +25,7 @@ from __future__ import print_function
 from socket import socket
 import bson
 import sys
+import random
 
 from common import connection_mode
 
@@ -86,7 +87,7 @@ class Proxy:
                 self.sock = None
                 self.fail(repr(e))
 
-        elif self.connection_mode == connection_mode.STAND_BY or self.connection_mode == connection_mode.LOAD_BALANCE:
+        elif self.connection_mode == connection_mode.STAND_BY:
             for host in self.hosts:
                 pair = (host, self.port)
                 print('trying to connect %s:%s in %s mode' % (pair + (self.connection_mode,)))
@@ -95,6 +96,30 @@ class Proxy:
                     self.sock.settimeout(1) # fail asap after 1 sec
                     self.sock.connect(pair)
                     print('connected')
+                    break
+                except Exception, e:
+                    self.sock.close()
+                    self.sock = None
+                    print('failed: ' + repr(e))
+                    pass
+            
+            if self.sock == None:
+                self.fail('all failed')
+
+        elif self.connection_mode == connection_mode.LOAD_BALANCE:
+            hosts = self.hosts
+            
+            while len(hosts) > 0:
+                host = random.choice(hosts)
+                hosts.remove(host)
+                pair = (host, self.port)
+                print('trying to connect %s:%s in %s mode' % (pair + (self.connection_mode,)))
+                try:
+                    self.sock = socket()
+                    self.sock.settimeout(1) # fail asap after 1 sec
+                    self.sock.connect(pair)
+                    print('connected')
+                    break
                 except Exception, e:
                     self.sock.close()
                     self.sock = None
