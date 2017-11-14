@@ -38,7 +38,7 @@ Or in python interactive shell
 
 """
 from time import time
-from bson_rpc import connect
+from bson_rpc import connect 
 
 if __name__ == '__main__':
     host = '127.0.0.1'
@@ -50,33 +50,33 @@ if __name__ == '__main__':
         connections.append(connect(host, port))
         print('connected to server %d' % i)
 
-    for i, conn in enumerate(connections):
+    for i, proxy in enumerate(connections):
         print('call server %d' % i)
-        conn.use_service(['hi', 'echo', 'add']);
-        err, res = conn.hi()
+        proxy.use_service(['hi', 'echo', 'add']);
+        err, res = proxy.hi()
         print('response from server %d: %s' % (i, str(res)))
-        err, res = conn.echo('你好')
+        err, res = proxy.echo('你好')
         print('response from server %d: %s' % (i, str(res)))
-        err, res = conn.add(1,2)
+        err, res = proxy.add(1,2)
         print('response from server %d: %s' % (i, str(res)))
 
-        conn.disconnect();
-        print('disconnected from server %d' % i)
+        proxy.disconnect();
+        print('disproxyected from server %d' % i)
 
-    conn = connect(host, port)
-    #conn = connect('ipc:///tmp/bson_rpc')
-    conn.use_service(['add'])
+    proxy = connect(host, port)
+    #proxy = connect('ipc:///tmp/bson_rpc')
+    proxy.use_service(['add'])
     begin = time()
     success = 0
     failure = 0
     while (time() - begin) < 5: # duration: 5 sec
-        err, result = conn.add(1,2)
+        err, result = proxy.add(1,2)
         if err == 0 and result == 3: #1+2=3
             success += 1
         else:
             failure += 1
 
-    conn.disconnect()
+    proxy.disconnect()
     end = time()
     print('Time elapsed: %d s' % int(end - begin))
     print('Successful request: %d ' % success)

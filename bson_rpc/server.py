@@ -41,6 +41,8 @@ remote_functions = dict()
 def rpc(func, name=None):
     """ add a function to remote callable function map.
 
+    >>> from bson_rpc import rpc
+
     use as function
 
     >>> rpc(lambda s: s, name="echo")
@@ -56,12 +58,12 @@ def rpc(func, name=None):
     remote_functions[name or func.__name__] = [func, 0, 0]
     return func
 
-def start_server(host = '127.0.0.1', port = 8181):
+def start(host = '127.0.0.1', port = 8181):
     """
     start_server
 
-    >>> from bson_rpc.server import start_server
-    >>> start_server()
+    >>> from bson_rpc import server
+    >>> server.start()
     """
     server = Server(host, port)
 
