@@ -5,13 +5,22 @@ a lightweight, high performance, multilingual RPC library
 
 [Spec](SPEC.md)
 
+## Pre Install
+
+```
+  pip install bson
+  pip list
+```
+
 ## Install
 
+```
 	pip install bson-rpc
 
 or,
 
 	pip install git+https://github.com/hmisty/bson-rpc.git
+```
 
 ## Examples
 
