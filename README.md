@@ -7,18 +7,16 @@ a lightweight, high performance, multilingual RPC library
 
 ## Pre Install
 
-```
+```shell
   pip install bson
   pip list
 ```
 
 ## Install
 
-```
+```shell
 	pip install bson-rpc
-
-or,
-
+  // or,
 	pip install git+https://github.com/hmisty/bson-rpc.git
 ```
 
