@@ -17,25 +17,29 @@
 
 import SimpleHTTPServer
 import SocketServer
-
+import falcon
 import json
 
 from bson_rpc import connect
+
+
 
 RPC_HOST_DEF = '127.0.0.1'
 RPC_PORT_DEF = 8181
 REST_PORT_DEF = 3000
 
 def _read_rpc_config():
-  with open('./examples/rest_api_wrapper/.secret.json') as data:
+  #with open('./examples/rest_api_wrapper/.secret.json') as data:
+  with open('./.secret.json') as data:
     config = json.load(data)
     print("Read rpc config: %s" % config)
     return config
 
-config = _read_rpc_config()
-print("Config: %s : %s" % (config["server"]["master"],config["port"]))
-proxy = connect(str(config["server"]["master"]), config["port"])
-#proxy.die_on_failure(False)
+# config = _read_rpc_config()
+# print("Config: %s : %s" % (config["server"]["master"],config["port"]))
+# proxy = connect(str(config["server"]["master"]), config["port"])
+proxy = connect("10.80.236.161", 8181)
+proxy.die_on_failure(True)
 proxy.use_service(['get_persona_with_user_identifier'])
 
 class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -114,11 +118,41 @@ class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     def send_doc4(self):
         self.send_docx(4)
 
-
+"""
+# Use simple http server
 handler = DemoHandler
 
 httpd = SocketServer.TCPServer(('', REST_PORT_DEF ), handler)
 
 print 'httpd server started at http://127.0.0.1:%s' % (REST_PORT_DEF)
 httpd.serve_forever()
+"""
 
+class PersonaREST(object):
+
+  def on_get(self, req, resp):
+    """ Handle get requests """
+    print("get persona info")
+    # 1. get request query param: uid
+    uid = req.get_param('uid') or '53d207bb2c4b9e6b3f97d0d5'
+    # 2. get rpc data
+    err, res = proxy.get_persona_with_user_identifier(uid)
+    # 3. send http reponse
+    if err == 0:
+      print("Get Persona OK")
+      persona = json.dumps(res)
+      # persona = json.dumps({"a":123,"b":"hi"})
+      # self.wfile.write(str(persona))
+      resp.set_header('Powered-By', 'JuliyeTech')
+      resp.status = falcon.HTTP_200
+      resp.body = persona
+    else:
+      print("Get Persona Error!!")
+      resp.set_header('Powered-By', 'JuliyeTech')
+      resp.status = falcon.HTTP_500
+      resp.body = json.dumps({"Error": err})
+    return
+
+app = falcon.API()
+persona = PersonaREST()
+app.add_route('/persona', persona)
