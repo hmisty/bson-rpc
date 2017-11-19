@@ -1,36 +1,60 @@
 #!/usr/bin/env python
 #encoding:utf-8
+#
+#################################
+# TODO List:
+# 1. Launch server -  DONE
+#   python examples/rest_api_wrapper/rest_api_server.py >> logs/access.log &
+#   tail -f logs/access.log
+# 2. Unit Test | REST Client
+# 3. Launch server pid
+# 4. Server Deaman
+# 5. Upgrade http server
+# 6. Upgrade rpc link mode
+# 7. Travis CI
+# 8. Code Climate
+#################################
 
 import SimpleHTTPServer
 import SocketServer
 
+import json
+
 from bson_rpc import connect
 
-PORT = 3000
+RPC_HOST_DEF = '127.0.0.1'
+RPC_PORT_DEF = 8181
+REST_PORT_DEF = 3000
 
-proxy = connect('127.0.0.1', 8181)
+def _read_rpc_config():
+  with open('./examples/rest_api_wrapper/.secret.json') as data:
+    config = json.load(data)
+    print("Read rpc config: %s" % config)
+    return config
+
+config = _read_rpc_config()
+print("Config: %s : %s" % (config["server"]["master"],config["port"]))
+proxy = connect(str(config["server"]["master"]), config["port"])
 #proxy.die_on_failure(False)
-
-proxy.use_service(['add'])
+proxy.use_service(['get_persona_with_user_identifier'])
 
 class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         route = {
-            '/' : self.send_docroot,
-            '/1': self.send_doc1,
-            '/2': self.send_doc2,
-            '/3': self.send_doc3,
-            '/4': self.send_doc4,
+            '/' : self.send_root,
+            '/persona': self.send_persona,
+            '/__stats__': self.send_stats,
         }
 
         path = self.path
         self.send_head()
         route.get(path, self.send_404)()
 
-    def send_head(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
+    def send_head(self, code=200):
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", 21)
         self.end_headers()
 
     def send_404(self):
@@ -41,7 +65,7 @@ class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.wfile.flush()
         self.wfile.close()
 
-    def send_docroot(self):
+    def send_root(self):
         self.wfile.write('''<html><body><ul>
                          <li><a href=/1>1</a></li>
                          <li><a href=/2>2</a></li>
@@ -51,6 +75,30 @@ class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                          ''')
         self.wfile.flush()
         self.wfile.close()
+
+    def send_persona(self):
+        print("send persona")
+        err, res = proxy.get_persona_with_user_identifier('53d207bb2c4b9e6b3f97d0d5')
+        # persona = json.dumps(res)
+        persona = json.dumps({"a":123,"b":"hi"})
+        if err == 0:
+          print("OK")
+          self.wfile.write(str(persona))
+        else:
+          print("Error!!")
+          self.wfile.write(err)
+        self.wfile.flush()
+        self.wfile.close()
+        return
+
+    def send_stats(self):
+        err, res = proxy.__stats__()
+        if err == 0:
+          self.wfile.write(str(res))
+          self.wfile.write(str(persona))
+        else:
+          self.wfile.write(err)
+        return
 
     def send_docx(self, x):
         err, res = proxy.add(x, x + 1)
@@ -63,23 +111,14 @@ class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.wfile.flush()
         self.wfile.close()
 
-    def send_doc1(self):
-        self.send_docx(1)
-
-    def send_doc2(self):
-        self.send_docx(2)
-
-    def send_doc3(self):
-        self.send_docx(3)
-
     def send_doc4(self):
         self.send_docx(4)
 
 
 handler = DemoHandler
 
-httpd = SocketServer.TCPServer(('', PORT), handler)
+httpd = SocketServer.TCPServer(('', REST_PORT_DEF ), handler)
 
-print 'httpd server started at http://127.0.0.1:%s' % (PORT)
+print 'httpd server started at http://127.0.0.1:%s' % (REST_PORT_DEF)
 httpd.serve_forever()
 
