@@ -134,9 +134,11 @@ class PersonaREST(object):
     """ Handle get requests """
     print("get persona info")
     # 1. get request query param: uid
-    uid = req.get_param('uid') or '53d207bb2c4b9e6b3f97d0d5'
+    uid = req.get_param('uid') or '' # '53d207bb2c4b9e6b3f97d0d5'
+    print("uid is %s" % uid)
     # 2. get rpc data
     err, res = proxy.get_persona_with_user_identifier(uid)
+    print("end of get rpc")
     # 3. send http reponse
     if err == 0:
       print("Get Persona OK")
@@ -153,6 +155,19 @@ class PersonaREST(object):
       resp.body = json.dumps({"Error": err})
     return
 
-app = falcon.API()
+class MonitorMiddleware(object):
+  def process_request(self, req, resp):
+    # TODO some monitor process
+    print('come into monitor middleware')
+    print('host : %s' % req.host) #req.get_header("Host"))
+    print('port : %s' % req.port) #req.get_header("Port"))
+    print('method : %s' % req.method) #req.get_header("Port"))
+    print('uri : %s' % req.uri) #req.get_header("Port"))
+    print('headers : %s' % req.headers) #req.get_header("Port"))
+    print('context : %s' % req.context)
+
+app = falcon.API(middleware=[
+  MonitorMiddleware(),
+  ])
 persona = PersonaREST()
 app.add_route('/persona', persona)

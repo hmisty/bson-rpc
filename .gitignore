@@ -1,5 +1,6 @@
 # Secret config
 .secret.json
+logs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
