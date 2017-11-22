@@ -32,6 +32,7 @@ class Settings:
         'pid_file': '/tmp/bson-rpc.pid',
         'log_file': '/tmp/bson-rpc.out',
         'err_file': '/tmp/bson-rpc.err',
+        'host_file': '/tmp/bson-rpc.host', # which interface to bind
     }
 
     def __repr__(self):
