@@ -163,7 +163,7 @@ def setup(local_settings):
     settings.update(local_settings)
 
 # exported
-def start(worker_main_loop, n_workers):
+def start(worker_main_loop, n_workers=settings.n_workers):
     log('daemon starting...')
     init_daemon()
 
