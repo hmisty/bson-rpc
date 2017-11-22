@@ -37,7 +37,8 @@ def create_main():
 
 def start_daemon():
     main = create_main()
-    daemon.start(main, N_WORKERS)
+    #daemon.start(main, N_WORKERS)
+    daemon.start(main)
 
 if __name__ == '__main__':
     #start_server()
