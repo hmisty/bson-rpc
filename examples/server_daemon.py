@@ -12,8 +12,6 @@ from bson_rpc import daemon
 from bson_rpc.config import settings
 from bson_rpc.server import rpc, Server
 
-N_WORKERS = 2
-
 @rpc
 def hi():
     return 'hi'
@@ -37,8 +35,9 @@ def create_main():
 
 def start_daemon():
     main = create_main()
-    #daemon.start(main, N_WORKERS)
+    #daemon.setup({ 'n_workers': 3 })
     daemon.start(main)
+    #daemon.start(main, 4)
 
 if __name__ == '__main__':
     #start_server()

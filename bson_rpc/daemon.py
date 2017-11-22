@@ -163,12 +163,15 @@ def setup(local_settings):
     settings.update(local_settings)
 
 # exported
-def start(worker_main_loop, n_workers=settings.n_workers):
+def start(worker_main_loop, n_workers=None):
     log('daemon starting...')
     init_daemon()
 
+    if n_workers:
+        settings.n_workers = n_workers
+
     workers = []
-    for i in range(n_workers):
+    for i in range(settings.n_workers):
         pid = start_worker(worker_main_loop)
         workers.append(pid)
 
