@@ -29,23 +29,18 @@ import atexit
 import time
 import socket
 import select
+import psutil
 import traceback
 
 from .config import settings
-from .server import Server
 
-# global server instance
-server = None
-
-# global daemon running
-keep_running = False
-
-# the global workers pid list
-# for checking/stopping workers
-workers = []
+#log
+def log(*args, **kwargs):
+    pid = os.getpid()
+    print(pid, *args, **kwargs)
 
 # get daemon pid
-def get_pid():
+def get_daemon_pid():
     try:
         pf = file(settings.pid_file, 'r')
         pid = int(pf.read().strip())
@@ -58,36 +53,31 @@ def get_pid():
     return pid
 
 # delete daemon pid file
-def del_pid():
+def del_daemon_pid():
     if os.path.exists(settings.pid_file):
+        log('delete daemon pid file %s' % settings.pid_file)
         os.remove(settings.pid_file)
 
-# check if a pid is alive
-def is_pid_alive(pid):
-    try:
-        os.kill(pid, 0)
-    except:
-        return False
-    else:
-        return True
-
-# fork a server
-def fork_a_server():
+# fork a worker
+def start_worker(worker_main_loop):
     pid = os.fork()
 
     if pid:
         # in parent process
-        global workers
-        workers.append(pid)
-        return
+        return pid
     else:
         # fork pid == 0, in child process
-        global server
-        server.pid = os.getpid() # save worker's pid
+
+        # clear signal hooks
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # start loop
         try:
-            server.start_forever()
-        except select.error, e:
-            print('server quit running... ', repr(e))
+            worker_main_loop()
+        except Exception, e:
+            log('worker main loop exit', repr(e))
             sys.exit(1)
 
 # daemonize
@@ -97,7 +87,7 @@ def daemonize():
         if pid > 0:
             sys.exit(0)
     except OSError, e:
-        print('fork1 failed', repr(e))
+        log('fork1 failed', repr(e))
         sys.exit(1)
 
     os.chdir(settings.home_dir)
@@ -109,7 +99,7 @@ def daemonize():
         if pid > 0:
             sys.exit(0)
     except OSError, e:
-        print('fork2 failed', repr(e))
+        log('fork2 failed', repr(e))
         sys.exit(1)
 
     sys.stdout.flush()
@@ -123,130 +113,105 @@ def daemonize():
     os.dup2(so.fileno(), sys.stdout.fileno())
     os.dup2(se.fileno(), sys.stderr.fileno())
 
-    print('daemon process started')
+    log('daemon process started')
 
-    atexit.register(del_pid)
+    #atexit.register(del_daemon_pid) #buggy. child will inherit and del pid file when die
     pid = str(os.getpid())
     file(settings.pid_file, 'w+', 0).write('%s\n' % pid)
 
-    print ('daemon pid_file(%s) created' % settings.pid_file)
+    log('daemon pid_file(%s) created' % settings.pid_file)
+
+# quit
+def quit_daemon():
+    # daemon entering exiting process
+    log('stopping all workers ...')
+
+    # kill all the workers
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    pid = os.getpid()
+    worker_list = psutil.Process(pid).children()
+    for p in worker_list:
+        try:
+            log('killing %s ...' % p.pid)
+            p.kill()
+        except OSError, err:
+            err = repr(err)
+            log(err)
+            pass
+
+    del_daemon_pid()
+
+    log('daemon %s exit' % pid)
+    sys.exit(0)
+
+# init
+def init_daemon():
+    # daemonize the parent
+    # * status workers
+    # * start/stop/restart a worker
+    # * auto-restart if a worker dies
+    pid = get_daemon_pid()
+    if pid:
+        log('%s already running' % pid)
+        sys.exit(1)
+    else:
+        daemonize()
 
 # exported
 def setup(local_settings):
     settings.update(local_settings)
 
 # exported
-def start(local_settings={}):
-    settings.update(local_settings)
-    print('starting ...')
+def start(worker_main_loop, n_workers):
+    log('daemon starting...')
+    init_daemon()
 
-    # daemonize the parent
-    # * status workers
-    # * start/stop/restart a worker
-    # * auto-restart if a worker dies
-    pid = get_pid()
-    if pid:
-        print('%s already running' % pid)
-        sys.exit(1)
-    else:
-        daemonize()
+    workers = []
+    for i in range(n_workers):
+        pid = start_worker(worker_main_loop)
+        workers.append(pid)
 
-        global server
-        try:
-            server = Server(settings.host, settings.port)
-        except socket.error, e:
-            print('cannot initialize server: ', repr(e))
+    log('workers', workers, 'started running!')
 
-        for i in range(settings.n_workers):
-            fork_a_server()
+    # auto-restart child
+    def child_exit_handler(signum, frame):
+        pid = os.wait()[0]
+        log('worker(%s) died. fork a new...' % pid)
+        time.sleep(1.0)
+        start_worker(worker_main_loop)
 
-        print(workers, 'started!')
+    signal.signal(signal.SIGCHLD, child_exit_handler)
 
-        # auto-restart child
-        def child_exit_handler(signum, frame):
-            pid = os.wait()[0]
-            global workers
-            workers.remove(pid)
-            print('worker(%s) shutdown. fork a new...' % pid)
-            fork_a_server()
-            return
+    # respond to termination
+    def terminate_handler(signum, frame):
+        log('daemon being terminated...')
+        quit_daemon()
 
-        signal.signal(signal.SIGCHLD, child_exit_handler)
+    signal.signal(signal.SIGTERM, terminate_handler)
 
-        # respond to termination
-        def terminate_handler(signum, frame):
-            global keep_running
-            keep_running = False
-            print('daemon terminated...')
+    def interrupt_handler(signum, frame):
+        log('daemon being interrupted...')
+        quit_daemon()
 
-        signal.signal(signal.SIGTERM, terminate_handler)
+    signal.signal(signal.SIGINT, interrupt_handler)
 
-        def interrupt_handler(signum, frame):
-            print('daemon interrupted...')
-
-        signal.signal(signal.SIGINT, interrupt_handler)
-
-        # daemon process entering event loop
-        global keep_running
-        keep_running = True
-
-        try:
-            os.unlink(settings.sock_file)
-        except OSError:
-            if os.path.exists(settings.sock_file):
-                raise
-
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.bind(settings.sock_file)
-        sock.listen(1)
-
-        while keep_running:
-            try:
-                conn, addr = sock.accept()
-
-                buf_size = 1024
-                request = conn.recv(buf_size)
-
-                if request == 'workers':
-                    conn.sendall(','.join([str(w) for w in workers]))
-                else:
-                    conn.sendall('unknown request: %s ' % request)
-
-                conn.close()
-            except socket.error, e:
-                print('daemon interrupted, possibly because of sig_chld:', repr(e))
-                #print('daemon socket error:', traceback.format_exc())
-
-        # daemon entering exiting process
-
-        print('stopping all workers ...')
-
-        # kill all the workers
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-        for pid in workers:
-            try:
-                #os.kill(pid, signal.SIGTERM)
-                os.kill(pid, signal.SIGKILL)
-            except OSError, err:
-                err = repr(err)
-                print(err)
-                pass
-
-        print('stopped!')
-
+    # forever loop
+    log('daemon', os.getpid(), 'started running!')
+    while True:
+        time.sleep(0.1)
 
 """
 exported
 """
-def stop(local_settings={}):
-    settings.update(local_settings)
-    print('stopping...')
+def stop():
+    log('daemon stopping...')
 
-    pid = get_pid()
+    pid = get_daemon_pid()
     if not pid:
         pid_file = settings.pid_file
         msg = 'pid file [%s] does not exist. is it not running?' % pid_file
-        print(msg)
+        log(msg)
         if os.path.exists(pid_file):
             os.remove(pid_file)
 
@@ -257,47 +222,35 @@ def stop(local_settings={}):
         os.kill(pid, signal.SIGTERM)
     except OSError, err:
         err = repr(err)
-        print(err)
+        log(err)
         if err.find('No such process') > 0:
             pid_file = settings.pid_file
             if os.path.exists(pid_file):
                 os.remove(pid_file)
             else:
-                print(repr(err))
+                log(repr(err))
                 sys.exit(1)
 
 
 # exported
-def status(local_settings={}):
-    settings.update(local_settings)
+def status():
+    pid = get_daemon_pid()
+    if not pid:
+        pid_file = settings.pid_file
+        msg = 'pid file [%s] does not exist. is it not running?' % pid_file
+        print(msg)
+        if os.path.exists(pid_file):
+            os.remove(pid_file)
 
-    pid = get_pid()
-    pids = {
-        '%s(daemon)' % pid: pid,
-    }
+        return
 
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    print('status: running')
+    print('%s: daemon' % pid)
 
-    try:
-        sock.connect(settings.sock_file)
-    except:
-        print('cannot connect to daemon(%s). is it not running?' % settings.sock_file)
-        sys.exit(1)
-
-    sock.sendall('workers')
-    buf_size = 1024
-    workers = sock.recv(buf_size)
-    sock.close()
-
-    worker_list = workers.split(',')
-    pids.update(dict([('%s(worker)' % w, int(w)) for w in worker_list]))
-
-    for k, p in pids.items():
-        if p and is_pid_alive(p):
-            pids[k] = 'running'
+    worker_list = psutil.Process(pid).children()
+    for p in worker_list:
+        if psutil.pid_exists(p.pid):
+            print('%s: active worker' % p.pid)
         else:
-            pids[k] = 'dead'
-
-    print(pids)
-
+            print('%s: dead worker' % p.pid)
 
