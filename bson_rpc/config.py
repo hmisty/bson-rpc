@@ -29,10 +29,10 @@ class Settings:
         'n_workers': 2,
         'home_dir': '/tmp',
         'umask': 022,
-        'pid_file': '/var/run/bson-rpc.pid',
-        'log_file': '/var/log/bson-rpc.out',
-        'err_file': '/var/log/bson-rpc.err',
-        'sock_file': '/tmp/bson-rpc.sock', # for ipc with daemon process
+        'pid_file': '/tmp/bson-rpc.pid',
+        'log_file': '/tmp/bson-rpc.out',
+        'err_file': '/tmp/bson-rpc.err',
+        'host_file': '/tmp/bson-rpc.host', # which interface to bind
     }
 
     def __repr__(self):
