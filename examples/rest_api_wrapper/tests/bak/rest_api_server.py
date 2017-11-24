@@ -164,7 +164,6 @@ class MonitorMiddleware(object):
     print('method : %s' % req.method) #req.get_header("Port"))
     print('uri : %s' % req.uri) #req.get_header("Port"))
     print('headers : %s' % req.headers) #req.get_header("Port"))
-    print('context : %s' % req.context)
 
 app = falcon.API(middleware=[
   MonitorMiddleware(),
