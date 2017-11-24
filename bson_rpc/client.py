@@ -51,8 +51,6 @@ class Proxy:
             self.hosts = list(args[0:2])
             self.port = args[2]
         elif len(args) == 2 or len(args) == 1:
-            print(type(args[0]))
-            print(args[0])
             if isinstance(args[0], str): # str == <type 'str'> 
                 # host, port
                 print('use STAND_ALONE mode')

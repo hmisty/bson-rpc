@@ -8,7 +8,9 @@ How to run:
 
 import sys
 import time
-from bson_rpc import rpc, start_server, daemon
+from bson_rpc import daemon
+from bson_rpc.config import settings
+from bson_rpc.server import rpc, Server
 
 @rpc
 def hi():
@@ -23,6 +25,20 @@ def add(a, b):
 def echo(s):
     return s
 
+def create_main():
+    s = Server(settings.host, settings.port)
+
+    def main():
+        s.start_forever()
+
+    return main
+
+def start_daemon():
+    main = create_main()
+    #daemon.setup({ 'n_workers': 3 })
+    daemon.start(main)
+    #daemon.start(main, 4)
+
 if __name__ == '__main__':
     #start_server()
     #sys.exit(0)
@@ -32,16 +48,8 @@ if __name__ == '__main__':
         print usage
         sys.exit(1)
 
-    local_settings={
-        'n_workers': 2,
-        'pid_file': '/tmp/brpc.pid',
-        'log_file': '/tmp/brpc.out',
-        'err_file': '/tmp/brpc.err',
-    }
-    daemon.setup(local_settings)
-
     if sys.argv[1] == 'start':
-        daemon.start()
+        start_daemon()
     elif sys.argv[1] == 'stop':
         daemon.stop()
     elif sys.argv[1] == 'status':

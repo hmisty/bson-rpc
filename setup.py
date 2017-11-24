@@ -25,36 +25,37 @@
 
 from distutils.core import setup
 
-VERSION = "0.9.1"
+VERSION = "0.10.3"
 URLBASE = "https://github.com/hmisty/bson-rpc/"
 URLMAP = {
-		"daily": "tarball/master",
-		"1.1": "tarball/1.1",
-		}
+    "daily": "tarball/master",
+    "1.1": "tarball/1.1",
+}
 
 if __name__ == "__main__":
-	setup(
-			name='bson-rpc',
-			version=VERSION,
-			description='a lightweight, high performance, multilingual RPC library',
-			author='Evan Liu (hmisty)',
-			author_email='hmisty@gmail.com',
-			url=URLBASE,
-			download_url='/'.join([URLBASE, URLMAP.get(VERSION, URLMAP['daily'])]),
-			packages=[
-				'bson_rpc'
-				],
-			scripts=[],
-			license= 'MIT',
-			keywords = ['BSON', 'bson-rpc', 'brpc', 'rpc'],
-			classifiers = [
-				'Development Status :: 4 - Beta',
-				'Topic :: Internet',
-				'Environment :: No Input/Output (Daemon)',
-				'Intended Audience :: Developers',
-				'License :: OSI Approved :: MIT License',
-				'Operating System :: OS Independent',
-				'Programming Language :: Python :: 2.7',
-				'Topic :: Software Development :: Libraries :: Python Modules',
-				]
-			)
+    setup(
+        name='bson-rpc',
+        version=VERSION,
+        description='a lightweight, high performance, multilingual RPC library',
+        author='Evan Liu (hmisty)',
+        author_email='hmisty@gmail.com',
+        url=URLBASE,
+        download_url='/'.join([URLBASE, URLMAP.get(VERSION, URLMAP['daily'])]),
+        packages=[
+            'bson_rpc'
+        ],
+        scripts=[],
+        license= 'MIT',
+        keywords = ['BSON', 'bson-rpc', 'brpc', 'rpc'],
+        classifiers = [
+            'Development Status :: 4 - Beta',
+            'Topic :: Internet',
+            'Environment :: No Input/Output (Daemon)',
+            'Intended Audience :: Developers',
+            'License :: OSI Approved :: MIT License',
+            'Operating System :: OS Independent',
+            'Programming Language :: Python :: 2.7',
+            'Topic :: Software Development :: Libraries :: Python Modules',
+        ],
+        install_requires=['bson==0.4.8', 'psutil==5.4.1']
+    )
