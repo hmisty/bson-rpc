@@ -17,12 +17,12 @@ Wrapper 功能
 1. dev    
 默认使用gunicorn启动，会有deamon进程守护    
 !! 需要在根目录下手工新建.secret.json配置文件，具体信息参考config.py    
-> cd project/root/dir    
-> load py_virtual_envs # if nessary    
-> pip install aumbry    
-> pip install gunicorn    
-> gunicorn -c gunicorn.py.ini app    
-
+> cd project/root/dir      
+> load py_virtual_envs # if nessary        
+> pip install aumbry      
+> pip install gunicorn       
+> gunicorn -c gunicorn.py.ini app       
+  
 
 2. production   
 生产环境增加supervisord守护      
