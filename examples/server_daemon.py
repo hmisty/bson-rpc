@@ -10,7 +10,7 @@ import sys
 import time
 from bson_rpc import daemon
 from bson_rpc.config import settings
-from bson_rpc.server import rpc, Server
+from bson_rpc.server import rpc, Server, ForkingServer
 
 @rpc
 def hi():
@@ -26,7 +26,7 @@ def echo(s):
     return s
 
 def create_main():
-    s = Server(settings.host, settings.port)
+    s = ForkingServer(settings.host, settings.port)
 
     def main():
         s.start_forever()
