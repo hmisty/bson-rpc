@@ -25,7 +25,7 @@
 
 from distutils.core import setup
 
-VERSION = "0.11.0"
+VERSION = "0.11.1"
 URLBASE = "https://github.com/hmisty/bson-rpc/"
 URLMAP = {
     "daily": "tarball/master",
