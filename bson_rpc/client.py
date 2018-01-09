@@ -29,6 +29,8 @@ import random
 
 from common import connection_mode
 
+TIMEOUT = 10
+
 class Proxy:
 
     # init some default setup
@@ -79,6 +81,7 @@ class Proxy:
                 self.sock = socket()
                 self.sock.settimeout(1) # fail asap after 1 sec
                 self.sock.connect(pair)
+                self.sock.settimeout(TIMEOUT)
                 print('connected')
             except Exception, e:
                 self.sock.close()
@@ -93,6 +96,7 @@ class Proxy:
                     self.sock = socket()
                     self.sock.settimeout(1) # fail asap after 1 sec
                     self.sock.connect(pair)
+                    self.sock.settimeout(TIMEOUT)
                     print('connected')
                     break
                 except Exception, e:
@@ -116,6 +120,7 @@ class Proxy:
                     self.sock = socket()
                     self.sock.settimeout(1) # fail asap after 1 sec
                     self.sock.connect(pair)
+                    self.sock.settimeout(TIMEOUT)
                     print('connected')
                     break
                 except Exception, e:

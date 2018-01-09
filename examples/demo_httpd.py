@@ -11,13 +11,14 @@ PORT = 3000
 proxy = connect('127.0.0.1', 8181)
 #proxy.die_on_failure(False)
 
-proxy.use_service(['add'])
+proxy.use_service(['add', 'hi'])
 
 class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         route = {
             '/' : self.send_docroot,
+            '/hi': self.send_dochi,
             '/1': self.send_doc1,
             '/2': self.send_doc2,
             '/3': self.send_doc3,
@@ -43,12 +44,23 @@ class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def send_docroot(self):
         self.wfile.write('''<html><body><ul>
+                         <li><a href=/hi>hi</a></li>
                          <li><a href=/1>1</a></li>
                          <li><a href=/2>2</a></li>
                          <li><a href=/3>3</a></li>
                          <li><a href=/4>4</a></li>
                          </ul></body></html>
                          ''')
+        self.wfile.flush()
+        self.wfile.close()
+
+    def send_dochi(self):
+        err, res = proxy.hi()
+        if err == 0:
+            self.wfile.write(res)
+        else:
+            self.wfile.write(err)
+
         self.wfile.flush()
         self.wfile.close()
 

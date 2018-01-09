@@ -149,6 +149,7 @@ def log(sock, *args):
     message = ' '.join(map(lambda x: str(x), args)).replace('\n', '').replace('\r', '')
     print(datetime, conn_str, message.decode('unicode_escape'))
 
+# type I server
 class Server:
     def __init__(self, host, port):
         self.pid = 0 # pid of the worker process
@@ -269,4 +270,52 @@ class Server:
             inputs.remove(sock)
             sock.close()
             del message_queues[sock]
+
+# type II server
+class ForkingServer:
+
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+        server = self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((self.host, self.port))
+        server.listen(5) # allow max 5 in waiting list
+        log('ForkingServer', server, 'Listening on', self.host, self.port)
+
+    def start_forever(self, timeout_interval=0):
+        bson.patch_socket()
+
+        while True:
+            conn, addr = self.server.accept()
+
+            pid = os.fork()
+            if pid:
+                # in parent process
+                log(conn, 'Forked process id =', pid, 'for serving', addr)
+                pass
+            else:
+                # in child process
+                while True:
+                    obj = None
+                    try:
+                        obj = conn.recvobj()
+                    except Exception as e:
+                        log(conn, e)
+                        sys.exit(1) # die on failure
+
+                    if obj:
+                        log(conn, 'REQUEST', obj)
+                        response = compute_on(obj) # caution: would block!
+
+                        log(conn, 'REPLY', response)
+                        try:
+                            conn.sendobj(response)
+                        except Exception as e:
+                            log(conn, e)
+                            sys.exit(1) # die on failure
+                    else:
+                        log(conn, 'received obj = None. Quit.')
+                        sys.exit(1)
 

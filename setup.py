@@ -25,7 +25,7 @@
 
 from distutils.core import setup
 
-VERSION = "0.10.3"
+VERSION = "0.11.1"
 URLBASE = "https://github.com/hmisty/bson-rpc/"
 URLMAP = {
     "daily": "tarball/master",
@@ -57,5 +57,5 @@ if __name__ == "__main__":
             'Programming Language :: Python :: 2.7',
             'Topic :: Software Development :: Libraries :: Python Modules',
         ],
-        install_requires=['bson==0.4.8', 'psutil==5.4.1']
+        install_requires=['bson==0.5.0', 'psutil==5.4.1']
     )
