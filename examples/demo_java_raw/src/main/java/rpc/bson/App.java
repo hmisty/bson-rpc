@@ -29,34 +29,34 @@ public class App
     {
         System.out.println("Demo how to write a raw Java client side according to bson-rpc protocol.");
 
-				try {
-					Socket socket = new Socket("127.0.0.1", 8181);
+        try {
+          Socket socket = new Socket("127.0.0.1", 8181);
 
-					OutputStream outputStream = socket.getOutputStream();
-					BSONObject out = new BasicBSONObject();
-					BSONEncoder encoder = new BasicBSONEncoder();
-					out.put("fn", "__stats__");
-					byte[] bin = encoder.encode(out);
-					outputStream.write(bin);
-					outputStream.flush();
+          OutputStream outputStream = socket.getOutputStream();
+          BSONObject out = new BasicBSONObject();
+          BSONEncoder encoder = new BasicBSONEncoder();
+          out.put("fn", "__stats__");
+          byte[] bin = encoder.encode(out);
+          outputStream.write(bin);
+          outputStream.flush();
 
-					InputStream inputStream = socket.getInputStream();
-					BSONDecoder decoder = new BasicBSONDecoder();
-					BSONObject in = decoder.readObject(inputStream); // read exactly a single BSON Object
+          InputStream inputStream = socket.getInputStream();
+          BSONDecoder decoder = new BasicBSONDecoder();
+          BSONObject in = decoder.readObject(inputStream); // read exactly a single BSON Object
 
-					Map m = in.toMap();
-					JSONObject json = JSONObject.fromObject(m);
-					System.out.println(json.toString());
+          Map m = in.toMap();
+          JSONObject json = JSONObject.fromObject(m);
+          System.out.println(json.toString());
 
-					// to keep the persisten connection, don't close them
-					//outputStream.close(); 
-					//inputStream.close();
-					//socket.close();
-				} catch (UnknownHostException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+          // to keep the persisten connection, don't close them
+          //outputStream.close(); 
+          //inputStream.close();
+          //socket.close();
+        } catch (UnknownHostException e) {
+          e.printStackTrace();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
 
     }
 }
