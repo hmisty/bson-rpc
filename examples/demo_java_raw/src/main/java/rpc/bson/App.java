@@ -20,7 +20,7 @@ import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONDecoder;
 
 /**
- * Hello world!
+ * Demo how to write a raw Java client side according to bson-rpc protocol.
  *
  */
 public class App 
