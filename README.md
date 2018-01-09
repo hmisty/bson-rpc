@@ -10,13 +10,20 @@ Therefore if there has not been an client library off the shelf, you can easily 
 And here are [available BSON libraries in many programming languages](http://bsonspec.org/implementations.html) for your use.
 
 
+## Pre Install
+
+```shell
+  pip install bson
+  pip list
+```
+
 ## Install
 
+```shell
 	pip install bson-rpc
-
-or,
-
+  // or,
 	pip install git+https://github.com/hmisty/bson-rpc.git
+```
 
 ## Examples
 

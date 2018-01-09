@@ -66,6 +66,7 @@ class DemoHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def send_docx(self, x):
         err, res = proxy.add(x, x + 1)
+        print("send docx : %s" % x )
         if err == 0:
             self.wfile.write(res)
         else:
