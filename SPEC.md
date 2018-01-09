@@ -33,6 +33,22 @@
 | 4 | Daemon-worker model | Yes | No, rely on supervisor to manage |
 | 5 | Auto-reconnect when DB recovered | Yes, return error 402 when DB disconnected and re-connect when recovered | ? |
 
+## Architecture
+
+```
++-----------------------------+   +-----------------------------+ 
+| BSON-RPC client application |   | BSON-RPC server application |
++-----------------------------+   +-----------------------------+
+| BSON-RPC client API library |   | BSON-RPC server API library |
++-----------------------------+   +-----------------------------+
+| BSON-RPC protocol           |   | BSON-RPC protocol           |
++-----------------------------+   +-----------------------------+
+| BSON object specification   |   | BSON object specification   |
++-----------------------------+   +-----------------------------+
+| TCP connection (persistent) |<->| TCP connection (persistent) |
++-----------------------------+   +-----------------------------+
+```
+
 ## Protocol
 
 * Payload data structure: BSON binary object

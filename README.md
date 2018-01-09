@@ -1,9 +1,14 @@
 # bson-rpc
 a lightweight, high performance, multilingual RPC library
 
-## Spec
+## Specification
 
-[Spec](SPEC.md)
+Have a look at [Spec](SPEC.md) and write your own client in minutes!
+
+We follow a very simple and efficient protocol as follows for greatly reducing your effort to build up your high performance architecture.
+Therefore if there has not been an client library off the shelf, you can easily pick up a BSON library and write your own.
+And here are [available BSON libraries in many programming languages](http://bsonspec.org/implementations.html) for your use.
+
 
 ## Install
 
