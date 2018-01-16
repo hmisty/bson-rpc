@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"gopkg.in/mgo.v2/bson"
+	"net"
 )
 
 func panicIfError(err error) {
@@ -13,7 +13,7 @@ func panicIfError(err error) {
 }
 
 func requestAndResponse(conn *net.TCPConn) *bson.M {
-	data, err := bson.Marshal(bson.M{"_id": 1, "fn":"__stats__", "args":[]string{}})
+	data, err := bson.Marshal(bson.M{"_id": 1, "fn": "__stats__", "args": []string{}})
 	panicIfError(err)
 
 	fmt.Printf("%q\n", data)
@@ -25,11 +25,11 @@ func requestAndResponse(conn *net.TCPConn) *bson.M {
 	panicIfError(err)
 
 	msglen := int32((uint32(b[0]) << 0) |
-	(uint32(b[1]) << 8) |
-	(uint32(b[2]) << 16) |
-	(uint32(b[3]) << 24))
+		(uint32(b[1]) << 8) |
+		(uint32(b[2]) << 16) |
+		(uint32(b[3]) << 24))
 
-	rest := make([]byte, msglen - 4)
+	rest := make([]byte, msglen-4)
 	_, err = conn.Read(rest)
 	panicIfError(err)
 
@@ -50,4 +50,3 @@ func main() {
 	out := requestAndResponse(conn)
 	fmt.Printf("%v\n", out)
 }
-
