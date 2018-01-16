@@ -42,10 +42,10 @@ func requestAndResponse(conn *net.TCPConn) *bson.M {
 func main() {
 	service := "127.0.0.1:8181"
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
+	panicIfError(err)
+
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		panic(err)
-	}
+	panicIfError(err)
 
 	out := requestAndResponse(conn)
 	fmt.Printf("%v\n", out)
