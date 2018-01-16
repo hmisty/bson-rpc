@@ -64,6 +64,12 @@ if __name__ == '__main__':
 
 nodejs: https://github.com/hmisty/bson-rpc-nodejs
 
+### Raw Client Examples
+
+Java: https://github.com/hmisty/bson-rpc/tree/master/examples/demo_java_raw
+
+Go: https://github.com/hmisty/bson-rpc/tree/master/examples/demo_go_raw
+
 ## For Contributors
 
 [Development Guide](DEV_GUIDE.md)
